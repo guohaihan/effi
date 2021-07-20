@@ -22,25 +22,6 @@
 - 个人中心
     - 个人信息管理
 
-#### 系统预览
-<table>
-    <tr>
-        <td><img src="https://img-blog.csdnimg.cn/2020111416290077.png" border="0" /></td>
-        <td><img src="https://img-blog.csdnimg.cn/20201114162859446.png" border="0" /></td>
-    </tr>
-    <tr>
-        <td><img src="https://img-blog.csdnimg.cn/20201114162858969.png" border="0" /></td>
-        <td><img src="https://img-blog.csdnimg.cn/20201114162858867.png" border="0" /></td>
-    </tr>
-    <tr>
-        <td><img src="https://img-blog.csdnimg.cn/20201114162858866.png" border="0" /></td>
-        <td><img src="https://img-blog.csdnimg.cn/20201114162858950.png" border="0" /></td>
-    </tr>
-    <tr>
-        <td><img src="https://img-blog.csdnimg.cn/20201114162858834.png" border="0" /></td>
-        <td><img src="https://img-blog.csdnimg.cn/20201114162859656.png" border="0" /></td>
-    </tr>
-</table>
 
 #### 代码结构
 ```python
