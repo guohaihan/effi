@@ -1,0 +1,32 @@
+﻿# coding=utf8
+user="guozhi"
+passwd="guozhi"
+backupdir="C:\Users\郑芳蓓\Desktop\sh_page"
+
+
+dbname=$(mysql -u$user -p$passwd -h 49.4.0.30 -ss -e "show databases;")
+
+date=$(date +%Y%m%d%H%M)
+
+outtime=20
+if [ ! -d $backupdir/$date ];then
+mkdir -p $backupdir/$date
+fi
+cd $backupdir/$date
+for databasename in $dbname
+
+do
+if [ $databasename != "mysql" ] && [ $databasename != "information_schema" ] && [ $databasename != "release_connection" ]\
+&& [ $databasename != "performance_schema" ] && [ $databasename != "sys" ] && [ $databasename != "log" ] && [ $databasename != "test" ];then
+
+backfile=$databasename.sql
+mysqldump -u$user -p$passwd -h 49.4.0.30 $databasename --single-transaction > $backupdir/$date/$backfile
+fi
+done
+cd $backupdir
+file=$date".tar.gz"
+tar -zcvf $file $date/*
+rm -rf $date
+
+
+find $backupdir -name *.tar.gz -mtime +$outtime -exec rm -f {} \;

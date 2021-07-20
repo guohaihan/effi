@@ -1,0 +1,23 @@
+# coding=utf8
+if [ -e "myshell" ] 
+then
+	cd myshell
+	for i in $@
+	do
+	if [ ! -e $i ]
+	then
+		touch $i.txt
+		echo "hello $i" >> $i.txt
+	else
+		echo "hello $i" >> $i.txt
+	fi
+	done
+else
+	mkdir myshell
+	cd myshell
+	for i in $@
+	do
+	touch $i.txt
+	echo "hello $i" >> $i.txt
+	done
+fi
