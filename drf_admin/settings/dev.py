@@ -65,7 +65,7 @@ INSTALLED_APPS = [
     'monitor',
     'cmdb',
     'information',
-    'guozhi',
+    'dbms',
 ]
 
 MIDDLEWARE = [

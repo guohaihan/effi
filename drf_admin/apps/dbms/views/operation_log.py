@@ -1,10 +1,12 @@
-from guozhi.models import SqlOperationLog
+from rest_framework.mixins import RetrieveModelMixin
+
+from dbms.models import SqlOperationLog, Accounts
 from rest_framework.response import Response
 from django_filters.rest_framework.filterset import FilterSet
 from django_filters import filters
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
-from guozhi.serializers.sqlserializers import SqlOperationLogSerializer
+from dbms.serializers.sqlserializers import SqlOperationLogSerializer, AccountsSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 import pymysql
@@ -14,7 +16,10 @@ import requests
 from django.shortcuts import redirect
 from django.urls import reverse
 from django_redis import get_redis_connection
-
+from drf_admin.utils.models import BaseModel, BasePasswordModels
+import base64
+from Crypto.Cipher import AES
+from django.conf import settings
 
 class MysqlList(object):
     # mysql 端口号,注意：必须是int类型
@@ -79,27 +84,23 @@ class MysqlList(object):
 
 
 class GetDatabaseView(APIView):
+    def get_password_display(self, field_name):
+        """
+        AES 解密登录密码
+        :return: 原明文密码
+        """
+        aes = AES.new(str.encode(settings.SECRET_KEY[4:20]), AES.MODE_ECB)
+        return str(
+            aes.decrypt(base64.decodebytes(bytes(field_name, encoding='utf8'))).rstrip(
+                b'\0').decode("utf8"))
+
     def base(self, name):
-        name = name
-        user = "guozhi"
-        passwd = "guozhi"
-        port = 3306
-        db_name = "mysql"
-        if name == "test":  # 测试1
-            host = "49.4.0.30"
-        elif name == "test2":  # 测试2
-            host = "114.115.138.105"
-        elif name == "prod":
-            host = "49.4.2.181"
-            user = "guohaihan"
-            passwd = "guohaihan@123"
-            db_name = None
-        elif name == "stage":
-            host = "49.4.5.190"
-        elif name == "uat":
-            host = "49.4.6.61"
-        else:
-            return "环境名称错误"
+        queryset = Accounts.objects.filter(environment=name).values()[0]
+        user = queryset["username"]
+        passwd = self.get_password_display(queryset["password"])
+        port = queryset["port"]
+        db_name = None
+        host = queryset["host"]
         return {"host": host,
                 "user": user,
                 "passwd": passwd,
@@ -146,7 +147,6 @@ class GetDatabaseView(APIView):
                     "status": status,
                     "error_info": error_info
                 }
-                print("0000000000000", data)
                 # 将执行结果记录到日志
                 OperationLogGenericView().create(data)
             if flag:
@@ -185,3 +185,16 @@ class OperationLogGenericView(ListCreateAPIView):
         self.perform_create(serializer)
         return Response(serializer.data)
 
+
+class AccountsGenericAPIView(RetrieveUpdateDestroyAPIView):
+    # 获取、更新、删除某个执行日志
+    queryset = Accounts.objects.order_by("-update_time")
+    serializer_class = AccountsSerializer
+
+
+class AccountsLogGenericView(ListCreateAPIView):
+    # 创建和获取执行日志
+    queryset = Accounts.objects.order_by("-update_time")
+    serializer_class = AccountsSerializer
+    # 设置查询字段
+    filter_backends = [DjangoFilterBackend]
