@@ -1,3 +1,4 @@
+from rest_framework import mixins
 from rest_framework.mixins import RetrieveModelMixin
 
 from dbms.models import SqlOperationLog, Accounts
@@ -85,6 +86,17 @@ class MysqlList(object):
 
 
 class GetDatabaseView(APIView):
+    """
+    get:
+    数据库操作--连接数据库
+
+    获取信息详情, status: 201(成功), return: 数据库表
+    post:
+    数据库操作--执行sql
+
+    获取信息详情, status: 201(成功), return: 执行结果
+    """
+
     def get_password_display(self, field_name):
         """
         AES 解密登录密码
@@ -105,11 +117,14 @@ class GetDatabaseView(APIView):
         port = queryset["port"]
         db_name = None
         host = queryset["host"]
+        environment = queryset["environment"]
         return {"host": host,
                 "user": user,
                 "passwd": passwd,
                 "db_name": db_name,
-                "port": port}
+                "port": port,
+                "environment": environment
+                }
 
     def get(self, request, pk):
         sql_data = self.base(pk)
@@ -119,9 +134,9 @@ class GetDatabaseView(APIView):
         all_db_list = obj.get_all_db()
         return Response(all_db_list)
 
-    def post(self, request, name):
+    def post(self, request, pk):
         # 执行sql，并记录到日志
-        base_data = self.base(name)
+        base_data = self.base(pk)
         # conn = get_redis_connection('user_info')
         username = request.user.get_username()
         database_name = request.data["database_name"]
@@ -144,7 +159,7 @@ class GetDatabaseView(APIView):
                     status = 0
                     error_info = str(sql_info["error"])
                 data = {
-                    "environment": name,
+                    "environment": base_data["environment"],
                     "database_name": database_name_i,
                     "operational_data": result_i,
                     "user": username,
@@ -169,13 +184,29 @@ class MyFilterSet(FilterSet):
         fields = ["operational_data", "status"]
 
 
-class OperationLogGenericAPIView(RetrieveUpdateDestroyAPIView):
+class OperationLogGenericAPIView(RetrieveAPIView):
+    """
+    get:
+    数据库执行日志--详情信息
+
+    获取信息详情, status: 201(成功), return: 日志详情
+    """
     # 获取、更新、删除某个执行日志
     queryset = SqlOperationLog.objects.order_by("-create_time")
     serializer_class = SqlOperationLogSerializer
 
 
 class OperationLogGenericView(ListCreateAPIView):
+    """
+    get:
+    数据库执行日志--列表
+
+    日志列表, status: 201(成功), return: 列表
+    post:
+    数据库执行日志--创建
+
+    创建日志, status: 201(成功), return: 日志信息
+    """
     # 创建和获取执行日志
     queryset = SqlOperationLog.objects.order_by("-create_time")
     serializer_class = SqlOperationLogSerializer
@@ -194,9 +225,22 @@ class AccountsGenericAPIView(RetrieveUpdateDestroyAPIView):
     """
     get:
     数据库--详情信息
+
+    获取数据库, status: 201(成功), return: 服务器信息
     put:
     数据库--更新信息
 
+    数据库更新, status: 201(成功), return: 更新后信息
+
+    patch:
+    数据库--更新信息
+
+    数据库更新, status: 201(成功), return: 更新后信息
+
+    delete:
+    数据库--删除
+
+    数据库删除, status: 201(成功), return: None
     """
     # 获取、更新、删除某个数据库信息
     queryset = Accounts.objects.order_by("-update_time")
@@ -220,10 +264,14 @@ class AccountsGenericAPIView(RetrieveUpdateDestroyAPIView):
 
 class AccountsLogGenericView(ListCreateAPIView):
     """
-    list:
+    get:
     数据库--列表
-    create:
+
+    数据库列表, status: 201(成功), return: 列表
+    post:
     数据库--创建
+
+    数据库创建, status: 201(成功), return: 服务器信息
     """
     # 创建和获取数据库信息
     queryset = Accounts.objects.order_by("-update_time")

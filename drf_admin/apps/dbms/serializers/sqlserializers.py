@@ -88,10 +88,11 @@ class AccountSerializer(serializers.ModelSerializer):
         return ret
 
     def update(self, instance, validated_data):
-        if instance.password == validated_data["password"]:
-            instance.password = instance.get_password_display('password')
-        else:
-            instance.password = validated_data.get('password',instance.password)
+        if "password" in validated_data:
+            if instance.password == validated_data["password"]:
+                instance.password = instance.get_password_display('password')
+            else:
+                instance.password = validated_data.get('password',instance.password)
         instance.client_name = validated_data.get('client_name', instance.client_name)
         instance.environment = validated_data.get('environment', instance.environment)
         instance.host = validated_data.get('host', instance.host)
