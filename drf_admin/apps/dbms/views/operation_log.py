@@ -94,8 +94,11 @@ class GetDatabaseView(APIView):
             aes.decrypt(base64.decodebytes(bytes(field_name, encoding='utf8'))).rstrip(
                 b'\0').decode("utf8"))
 
-    def base(self, name):
-        queryset = Accounts.objects.filter(environment=name).values()[0]
+    def base(self, pk):
+        """
+        拼接数据库连接信息
+        """
+        queryset = Accounts.objects.filter(id=pk).values()[0]
         user = queryset["username"]
         passwd = self.get_password_display(queryset["password"])
         port = queryset["port"]
@@ -107,9 +110,10 @@ class GetDatabaseView(APIView):
                 "db_name": db_name,
                 "port": port}
 
-    def get(self, request, name):
+    def get(self, request, pk):
+        sql_data = self.base(pk)
+
         # 获取某个环境的数据库
-        sql_data = self.base(name)
         obj = MysqlList(sql_data["host"], sql_data["user"], sql_data["passwd"], sql_data["port"], sql_data["db_name"])
         all_db_list = obj.get_all_db()
         return Response(all_db_list)
@@ -118,8 +122,7 @@ class GetDatabaseView(APIView):
         # 执行sql，并记录到日志
         base_data = self.base(name)
         # conn = get_redis_connection('user_info')
-        user_info = request.user.get_user_info()
-        username = user_info["username"]
+        username = request.user.get_username()
         database_name = request.data["database_name"]
         sql_data = request.data["sql_data"]
         if not sql_data:
@@ -187,14 +190,39 @@ class OperationLogGenericView(ListCreateAPIView):
 
 
 class AccountsGenericAPIView(RetrieveUpdateDestroyAPIView):
-    # 获取、更新、删除某个执行日志
+    # 获取、更新、删除某个数据库信息
     queryset = Accounts.objects.order_by("-update_time")
     serializer_class = AccountsSerializer
 
+    def put(self, request, *args, **kwargs):
+        username = request.user.get_username()
+        request.data["create_user"] = username
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            # If 'prefetch_related' has been applied to a queryset, we need to
+            # forcibly invalidate the prefetch cache on the instance.
+            instance._prefetched_objects_cache = {}
+        return Response(serializer.data)
+
 
 class AccountsLogGenericView(ListCreateAPIView):
-    # 创建和获取执行日志
+    # 创建和获取数据库信息
     queryset = Accounts.objects.order_by("-update_time")
     serializer_class = AccountsSerializer
     # 设置查询字段
     filter_backends = [DjangoFilterBackend]
+
+    def post(self, request, *args, **kwargs):
+        username = request.user.get_username()
+        request.data["create_user"] = username
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, headers=headers)
+

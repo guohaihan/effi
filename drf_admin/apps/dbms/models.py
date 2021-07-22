@@ -1,5 +1,6 @@
 from django.db import models
 from drf_admin.utils.models import BaseModel, BasePasswordModels
+from django_redis import get_redis_connection
 
 
 class Sqlscripts(BaseModel):
@@ -50,7 +51,7 @@ class Accounts(BasePasswordModels, BaseModel):
         (1, "sqlserver")
     )
     client_name = models.CharField(max_length=50, verbose_name="连接名称")
-    environment = models.IntegerField(choices=env_type_choice, unique=True, default=1, verbose_name="环境")
+    environment = models.IntegerField(choices=env_type_choice, default=1, verbose_name="环境")
     host = models.CharField(max_length=50, verbose_name="ip地址")
     database_type = models.IntegerField(choices=database_type_choice, default=0, verbose_name="数据库类型")
     database_version = models.CharField(max_length=50, verbose_name="数据库版本")
