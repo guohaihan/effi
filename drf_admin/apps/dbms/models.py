@@ -55,7 +55,7 @@ class Accounts(BasePasswordModels, BaseModel):
     host = models.CharField(max_length=50, verbose_name="ip地址")
     database_type = models.IntegerField(choices=database_type_choice, default=0, verbose_name="数据库类型")
     database_version = models.CharField(max_length=50, verbose_name="数据库版本")
-    use = models.CharField(max_length=200, verbose_name="用途")
+    function = models.CharField(max_length=200, verbose_name="用途")
     database_name = models.CharField(max_length=50, default=None, verbose_name="数据库名称")
     username = models.CharField(max_length=32, verbose_name='登录账户')
     password = models.CharField(max_length=64, verbose_name='登录密码')

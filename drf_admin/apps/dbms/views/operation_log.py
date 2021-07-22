@@ -191,6 +191,13 @@ class OperationLogGenericView(ListCreateAPIView):
 
 
 class AccountsGenericAPIView(RetrieveUpdateDestroyAPIView):
+    """
+    get:
+    数据库--详情信息
+    put:
+    数据库--更新信息
+
+    """
     # 获取、更新、删除某个数据库信息
     queryset = Accounts.objects.order_by("-update_time")
     serializer_class = AccountSerializer
@@ -212,6 +219,12 @@ class AccountsGenericAPIView(RetrieveUpdateDestroyAPIView):
 
 
 class AccountsLogGenericView(ListCreateAPIView):
+    """
+    list:
+    数据库--列表
+    create:
+    数据库--创建
+    """
     # 创建和获取数据库信息
     queryset = Accounts.objects.order_by("-update_time")
     serializer_class = AccountSerializer
