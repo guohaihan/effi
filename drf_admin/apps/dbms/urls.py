@@ -11,4 +11,5 @@ urlpatterns = [
     path("operation_log/operation_log/<pk>/", operation_log.OperationLogGenericAPIView.as_view()),
     path("operation_log/accounts/", operation_log.AccountsLogGenericView.as_view()),
     path("operation_log/accounts/<pk>/", operation_log.AccountsGenericAPIView.as_view()),
+    path("operation_log/type/", operation_log.DbTypeAPIView.as_view())
 ]
