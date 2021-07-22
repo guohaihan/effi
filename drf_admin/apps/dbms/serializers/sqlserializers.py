@@ -51,7 +51,7 @@ class SqlOperationLogSerializer(serializers.ModelSerializer):
     error_info = serializers.CharField(max_length=255, default="Null")
 
 
-class AccountsSerializer(serializers.ModelSerializer):
+class AccountSerializer(serializers.ModelSerializer):
     class Meta:
         model = Accounts
         fields = "__all__"

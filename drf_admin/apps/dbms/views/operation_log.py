@@ -6,7 +6,7 @@ from django_filters.rest_framework.filterset import FilterSet
 from django_filters import filters
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
-from dbms.serializers.sqlserializers import SqlOperationLogSerializer, AccountsSerializer
+from dbms.serializers.sqlserializers import SqlOperationLogSerializer, AccountSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 import pymysql
@@ -20,6 +20,7 @@ from drf_admin.utils.models import BaseModel, BasePasswordModels
 import base64
 from Crypto.Cipher import AES
 from django.conf import settings
+
 
 class MysqlList(object):
     # mysql 端口号,注意：必须是int类型
@@ -192,7 +193,7 @@ class OperationLogGenericView(ListCreateAPIView):
 class AccountsGenericAPIView(RetrieveUpdateDestroyAPIView):
     # 获取、更新、删除某个数据库信息
     queryset = Accounts.objects.order_by("-update_time")
-    serializer_class = AccountsSerializer
+    serializer_class = AccountSerializer
 
     def put(self, request, *args, **kwargs):
         username = request.user.get_username()
@@ -213,7 +214,7 @@ class AccountsGenericAPIView(RetrieveUpdateDestroyAPIView):
 class AccountsLogGenericView(ListCreateAPIView):
     # 创建和获取数据库信息
     queryset = Accounts.objects.order_by("-update_time")
-    serializer_class = AccountsSerializer
+    serializer_class = AccountSerializer
     # 设置查询字段
     filter_backends = [DjangoFilterBackend]
 
