@@ -124,9 +124,9 @@ WSGI_APPLICATION = 'drf_admin.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': "guozhi_test_admin",
+        'NAME': "mydrf",
         'USER': "root",
-        'PASSWORD': "mysql",
+        'PASSWORD': "123456",
         'HOST': '127.0.0.1',
         'PORT': 3306
     }

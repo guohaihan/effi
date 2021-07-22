@@ -21,6 +21,8 @@ import base64
 from Crypto.Cipher import AES
 from django.conf import settings
 
+from drf_admin.utils.views import ChoiceAPIView
+
 
 class MysqlList(object):
     # mysql 端口号,注意：必须是int类型
@@ -239,4 +241,15 @@ class AccountsLogGenericView(ListCreateAPIView):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, headers=headers)
+
+
+class DbTypeAPIView(ChoiceAPIView):
+    """
+    get:
+    数据库-models类型列表
+
+    数据库models中的类型列表信息, status: 200(成功), return: 服务器models中的类型列表
+    """
+    choice = Accounts.database_type_choice
+
 
