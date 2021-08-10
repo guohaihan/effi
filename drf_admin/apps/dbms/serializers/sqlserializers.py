@@ -68,7 +68,7 @@ class AccountSerializer(serializers.ModelSerializer):
         (0, "mysql"),
         (1, "sqlserver")
     )
-    client_name = serializers.CharField(max_length=50)
+    # client_name = serializers.CharField(max_length=50)
     environment = serializers.CharField()
     host = serializers.CharField(max_length=50)
     database_type = serializers.CharField(read_only=True)
@@ -93,7 +93,7 @@ class AccountSerializer(serializers.ModelSerializer):
                 instance.password = instance.get_password_display('password')
             else:
                 instance.password = validated_data.get('password',instance.password)
-        instance.client_name = validated_data.get('client_name', instance.client_name)
+        # instance.client_name = validated_data.get('client_name', instance.client_name)
         instance.environment = validated_data.get('environment', instance.environment)
         instance.host = validated_data.get('host', instance.host)
         instance.database_type = validated_data.get('database_type', instance.database_type)

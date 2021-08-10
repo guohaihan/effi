@@ -50,7 +50,7 @@ class Accounts(BasePasswordModels, BaseModel):
         (0, "mysql"),
         (1, "sqlserver")
     )
-    client_name = models.CharField(max_length=50, verbose_name="连接名称")
+    # client_name = models.CharField(max_length=50, verbose_name="连接名称")
     environment = models.IntegerField(choices=env_type_choice, default=1, verbose_name="环境")
     host = models.CharField(max_length=50, verbose_name="ip地址")
     database_type = models.IntegerField(choices=database_type_choice, default=0, verbose_name="数据库类型")
