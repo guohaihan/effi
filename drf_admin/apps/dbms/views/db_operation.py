@@ -1,13 +1,13 @@
 from rest_framework import mixins
 from rest_framework.mixins import RetrieveModelMixin
 
-from dbms.models import SqlOperationLog, Accounts
+from dbms.models import SqlOperationLog, DBServerConfig
 from rest_framework.response import Response
 from django_filters.rest_framework.filterset import FilterSet
 from django_filters import filters
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
-from dbms.serializers.sqlserializers import SqlOperationLogSerializer, AccountSerializer
+from dbms.serializers.sqlserializers import SqlOperationLogSerializer, DBServerConfigSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 import pymysql
@@ -113,7 +113,7 @@ class GetDatabaseView(APIView):
         """
         拼接数据库连接信息
         """
-        queryset = Accounts.objects.filter(id=pk).values()[0]
+        queryset = DBServerConfig.objects.filter(id=pk).values()[0]
         user = queryset["username"]
         passwd = self.get_password_display(queryset["password"])
         port = queryset["port"]
@@ -223,7 +223,7 @@ class OperationLogGenericView(ListCreateAPIView):
         return Response(serializer.data)
 
 
-class AccountsGenericAPIView(RetrieveUpdateDestroyAPIView):
+class DBServerConfigGenericAPIView(RetrieveUpdateDestroyAPIView):
     """
     get:
     数据库--详情信息
@@ -245,8 +245,8 @@ class AccountsGenericAPIView(RetrieveUpdateDestroyAPIView):
     数据库删除, status: 201(成功), return: None
     """
     # 获取、更新、删除某个数据库信息
-    queryset = Accounts.objects.order_by("-update_time")
-    serializer_class = AccountSerializer
+    queryset = DBServerConfig.objects.order_by("-update_time")
+    serializer_class = DBServerConfigSerializer
 
     def put(self, request, *args, **kwargs):
         username = request.user.get_username()
@@ -276,8 +276,8 @@ class AccountsLogGenericView(ListCreateAPIView):
     数据库创建, status: 201(成功), return: 服务器信息
     """
     # 创建和获取数据库信息
-    queryset = Accounts.objects.order_by("-update_time")
-    serializer_class = AccountSerializer
+    queryset = DBServerConfig.objects.order_by("-update_time")
+    serializer_class = DBServerConfigSerializer
     # 设置查询字段
     filter_backends = [DjangoFilterBackend]
 
@@ -298,6 +298,6 @@ class DbTypeAPIView(ChoiceAPIView):
 
     数据库models中的类型列表信息, status: 200(成功), return: 服务器models中的类型列表
     """
-    choice = Accounts.database_type_choice
+    choice = DBServerConfig.database_type_choice
 
 

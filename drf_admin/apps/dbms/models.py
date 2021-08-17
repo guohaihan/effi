@@ -37,7 +37,7 @@ class SqlOperationLog(models.Model):
         verbose_name_plural = verbose_name
 
 
-class Accounts(BasePasswordModels, BaseModel):
+class DBServerConfig(BasePasswordModels, BaseModel):
     """服务器登录账户表"""
     env_type_choice = (
         (0, "生产"),
@@ -51,20 +51,20 @@ class Accounts(BasePasswordModels, BaseModel):
         (1, "sqlserver")
     )
     # client_name = models.CharField(max_length=50, verbose_name="连接名称")
-    environment = models.IntegerField(choices=env_type_choice, default=1, verbose_name="环境")
-    host = models.CharField(max_length=50, verbose_name="ip地址")
-    database_type = models.IntegerField(choices=database_type_choice, default=0, verbose_name="数据库类型")
-    database_version = models.CharField(max_length=50, verbose_name="数据库版本")
-    function = models.CharField(max_length=200, verbose_name="用途")
-    database_name = models.CharField(max_length=50, default=None, verbose_name="数据库名称")
-    username = models.CharField(max_length=32, verbose_name='登录账户')
-    password = models.CharField(max_length=64, verbose_name='登录密码')
-    port = models.PositiveIntegerField(verbose_name='登录端口号')
+    db_env = models.IntegerField(choices=env_type_choice, default=1, verbose_name="环境类型")
+    db_ip = models.CharField(max_length=50, verbose_name="ip地址")
+    db_type = models.IntegerField(choices=database_type_choice, default=0, verbose_name="数据库类型")
+    db_version = models.CharField(max_length=50, verbose_name="数据库版本")
+    db_mark = models.CharField(max_length=200, verbose_name="备注")
+    db_name = models.CharField(max_length=50, default=None, verbose_name="数据库名称")
+    db_username = models.CharField(max_length=32, verbose_name='登录账户')
+    db_password = models.CharField(max_length=64, verbose_name='登录密码')
+    db_port = models.PositiveIntegerField(verbose_name='登录端口号')
     create_user = models.CharField(max_length=20, verbose_name="创建者")
     objects = models.Manager()
 
     class Meta:
-        db_table = 'dbms_database_info'
+        db_table = 'db_config_info'
         verbose_name = '数据库连接信息'
         verbose_name_plural = verbose_name
         ordering = ['update_time']

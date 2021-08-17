@@ -9,10 +9,10 @@
 
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
-from dbms.models import Accounts
+from dbms.models import DBServerConfig
 
 
-@receiver(pre_save, sender=Accounts)
+@receiver(pre_save, sender=DBServerConfig)
 def encrypt_password_accounts(sender, instance, **kwargs):
     """
     保存服务器登录账户时将密码加密存储
