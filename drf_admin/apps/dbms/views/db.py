@@ -83,7 +83,7 @@ class DBServerConfigGenericView(ListCreateAPIView):
     queryset = DBServerConfig.objects.order_by("-update_time")
     serializer_class = DBServerConfigSerializer
     # 自定义过滤字段
-    filter_backends = (DjangoFilterBackend, SearchFilter)
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
     filter_fields = ['db_type', "db_env"]
     search_fields = ("db_ip", "db_name")
 
