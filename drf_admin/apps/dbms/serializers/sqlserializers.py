@@ -70,9 +70,9 @@ class DBServerConfigSerializer(serializers.ModelSerializer):
     # client_name = serializers.CharField(max_length=50)
     db_env = serializers.CharField()
     db_ip = serializers.CharField(max_length=50)
-    db_type = serializers.CharField()
-    db_version = serializers.CharField(max_length=50)
-    db_mark = serializers.CharField(max_length=200)
+    db_type = serializers.CharField(max_length=50)
+    db_version = serializers.CharField(max_length=50, allow_blank=True)
+    db_mark = serializers.CharField(max_length=200, allow_blank=True)
     db_name = serializers.CharField(max_length=50)
     db_username = serializers.CharField(max_length=32)
     db_password = serializers.CharField(max_length=128)
@@ -81,8 +81,8 @@ class DBServerConfigSerializer(serializers.ModelSerializer):
 
     # def to_representation(self, instance):
     #     ret = super().to_representation(instance)
-    #     ret["environment"] = instance.get_environment_display()
-    #     ret["database_type"] = instance.get_database_type_display()
+    #     ret["db_env"] = instance.get_db_env_display()
+    #     ret["db_type"] = instance.get_db_type_display()
     #     # ret['password'] = instance.get_password_display('password')  # 会显密码
     #     return ret
 
