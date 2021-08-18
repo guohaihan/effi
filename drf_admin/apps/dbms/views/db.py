@@ -1,27 +1,9 @@
-from rest_framework import mixins
-from rest_framework.mixins import RetrieveModelMixin
-
 from dbms.models import DBServerConfig
 from rest_framework.response import Response
-from django_filters.rest_framework.filterset import FilterSet
-from django_filters import filters
-from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
 from dbms.serializers.dbs import DBServerConfigSerializer
 from django_filters.rest_framework import DjangoFilterBackend
-from django.http import HttpResponse
-import pymysql
-import re
-import json
-import requests
-from django.shortcuts import redirect
-from django.urls import reverse
-from django_redis import get_redis_connection
-from drf_admin.utils.models import BaseModel, BasePasswordModels
-import base64
-from Crypto.Cipher import AES
-from django.conf import settings
-from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.filters import SearchFilter
 from drf_admin.utils.views import ChoiceAPIView
 
 
@@ -83,7 +65,7 @@ class DBServerConfigGenericView(ListCreateAPIView):
     queryset = DBServerConfig.objects.order_by("-update_time")
     serializer_class = DBServerConfigSerializer
     # 自定义过滤字段
-    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     filter_fields = ['db_type', "db_env"]
     search_fields = ("db_ip", "db_name")
 
