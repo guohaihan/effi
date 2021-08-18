@@ -47,8 +47,8 @@ class DBServerConfig(BasePasswordModels, BaseModel):
         (4, "验收")
     )
     database_type_choice = (
-        (0, "mysql"),
-        (1, "sqlserver")
+        ("0", "mysql"),
+        ("1", "sqlserver")
     )
     # client_name = models.CharField(max_length=50, verbose_name="连接名称")
     db_env = models.IntegerField(choices=env_type_choice, default=1, verbose_name="环境类型")

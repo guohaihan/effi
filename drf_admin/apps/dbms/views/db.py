@@ -245,7 +245,7 @@ class DBServerConfigGenericView(ListCreateAPIView):
     serializer_class = DBServerConfigSerializer
     # 自定义过滤字段
     filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
-    search_fields = ('db_name', 'db_ip')
+    search_fields = ('db_name','db_ip')
 
     def post(self, request, *args, **kwargs):
         username = request.user.get_username()
