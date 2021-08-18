@@ -58,13 +58,13 @@ class DBServerConfig(BasePasswordModels, BaseModel):
     db_mark = models.CharField(max_length=200, verbose_name="备注")
     db_name = models.CharField(max_length=50, default=None, verbose_name="数据库名称")
     db_username = models.CharField(max_length=32, verbose_name='登录账户')
-    db_password = models.CharField(max_length=64, verbose_name='登录密码')
+    db_password = models.CharField(max_length=128, verbose_name='登录密码')
     db_port = models.PositiveIntegerField(verbose_name='登录端口号')
     create_user = models.CharField(max_length=20, verbose_name="创建者")
     objects = models.Manager()
 
     class Meta:
-        db_table = 'db_config_info'
+        db_table = 'dbms_config_info'
         verbose_name = '数据库连接信息'
         verbose_name_plural = verbose_name
         ordering = ['update_time']

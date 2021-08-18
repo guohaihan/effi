@@ -80,12 +80,12 @@ class DBServerConfigSerializer(serializers.ModelSerializer):
     db_port = serializers.CharField()
     create_user = serializers.CharField(max_length=20)
 
-    def to_representation(self, instance):
-        ret = super().to_representation(instance)
-        ret["environment"] = instance.get_environment_display()
-        ret["database_type"] = instance.get_database_type_display()
-        # ret['password'] = instance.get_password_display('password')  # 会显密码
-        return ret
+    # def to_representation(self, instance):
+    #     ret = super().to_representation(instance)
+    #     ret["environment"] = instance.get_environment_display()
+    #     ret["database_type"] = instance.get_database_type_display()
+    #     # ret['password'] = instance.get_password_display('password')  # 会显密码
+    #     return ret
 
     def update(self, instance, validated_data):
         if "password" in validated_data:
@@ -101,7 +101,7 @@ class DBServerConfigSerializer(serializers.ModelSerializer):
         instance.mark = validated_data.get('db_mark', instance.db_mark)
         instance.db_name = validated_data.get('db_name', instance.db_name)
         instance.db_username = validated_data.get('db_username', instance.db_username)
-        instance.db_port = validated_data.get('port', instance.db_port)
+        instance.db_port = validated_data.get('db_port', instance.db_port)
         instance.create_user = validated_data.get('create_user', instance.create_user)
         instance.save()
         return instance

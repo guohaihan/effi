@@ -21,4 +21,4 @@ def encrypt_password_accounts(sender, instance, **kwargs):
     :param kwargs:
     :return:
     """
-    instance.set_password('password', instance.password)
+    instance.set_password('db_password', instance.db_password)
