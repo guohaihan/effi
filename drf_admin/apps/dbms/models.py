@@ -22,17 +22,17 @@ class Sqlscripts(BaseModel):
         verbose_name_plural = verbose_name
 
 
-class SqlOperationLog(models.Model):
-    environment = models.CharField(max_length=20, verbose_name="环境")
-    database_name = models.CharField(max_length=50, verbose_name="数据库名")
-    operational_data = models.TextField(verbose_name="执行语句")
-    user = models.CharField(max_length=20, verbose_name="用户名")
+class OperateLogs(models.Model):
+    env = models.CharField(max_length=20, verbose_name="环境")
+    db_name = models.CharField(max_length=50, verbose_name="数据库名")
+    operate_sql = models.TextField(verbose_name="执行语句")
+    performer = models.CharField(max_length=20, verbose_name="执行者")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     status = models.IntegerField(choices=((0, '失败'), (1, '成功')), verbose_name='执行状态', default=1)
     error_info = models.CharField(max_length=255, default=None, verbose_name="message")
 
     class Meta:
-        db_table = "dbms_operation_log"
+        db_table = "dbms_operate_logs"
         verbose_name = "sql执行记录"
         verbose_name_plural = verbose_name
 

@@ -9,7 +9,7 @@ from drf_admin.common.file_operations import FileOperations
 from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework.filterset import FilterSet
 from django_filters import filters
-from dbms.serializers.sqlserializers import SqlscriptsSerializer
+from dbms.serializers.operates import SqlscriptsSerializer
 from dbms.models import Sqlscripts
 import os, subprocess
 # Create your views here.
