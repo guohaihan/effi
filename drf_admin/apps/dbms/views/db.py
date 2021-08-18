@@ -21,7 +21,7 @@ from drf_admin.utils.models import BaseModel, BasePasswordModels
 import base64
 from Crypto.Cipher import AES
 from django.conf import settings
-
+from rest_framework.filters import SearchFilter, OrderingFilter
 from drf_admin.utils.views import ChoiceAPIView
 
 
@@ -212,6 +212,8 @@ class DBServerConfigGenericAPIView(RetrieveUpdateDestroyAPIView):
     serializer_class = DBServerConfigSerializer
 
     def put(self, request, *args, **kwargs):
+        if len(request.data) < 9:
+            kwargs['partial'] = True
         username = request.user.get_username()
         request.data["create_user"] = username
         partial = kwargs.pop('partial', False)
@@ -241,8 +243,10 @@ class DBServerConfigGenericView(ListCreateAPIView):
     # 创建和获取数据库信息
     queryset = DBServerConfig.objects.order_by("-update_time")
     serializer_class = DBServerConfigSerializer
-    # 设置查询字段
-    filter_backends = [DjangoFilterBackend]
+    # 自定义过滤字段
+    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filter_fields = ['db_type', "db_env"]
+    search_fields = ("db_ip")
 
     def post(self, request, *args, **kwargs):
         username = request.user.get_username()

@@ -55,7 +55,7 @@ class DBServerConfig(BasePasswordModels, BaseModel):
     db_ip = models.CharField(max_length=50, verbose_name="ip地址")
     db_type = models.IntegerField(choices=database_type_choice, default=0, verbose_name="数据库类型")
     db_version = models.CharField(max_length=50, verbose_name="数据库版本")
-    db_mark = models.CharField(max_length=200, verbose_name="备注")
+    db_mark = models.CharField(max_length=200, verbose_name="备注", null=True)
     db_name = models.CharField(max_length=50, default=None, verbose_name="数据库名称")
     db_username = models.CharField(max_length=32, verbose_name='登录账户')
     db_password = models.CharField(max_length=128, verbose_name='登录密码')
