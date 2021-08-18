@@ -56,7 +56,6 @@ class DBServerConfigSerializer(serializers.ModelSerializer):
         model = DBServerConfig
         fields = "__all__"
 
-    """服务器登录账户表"""
     env_type_choice = (
         (0, "生产"),
         (1, "测试"),
@@ -71,12 +70,12 @@ class DBServerConfigSerializer(serializers.ModelSerializer):
     # client_name = serializers.CharField(max_length=50)
     db_env = serializers.CharField()
     db_ip = serializers.CharField(max_length=50)
-    db_type = serializers.CharField(read_only=True)
-    db_version = serializers.CharField(max_length=50, read_only=True)
-    db_mark = serializers.CharField(max_length=200, read_only=True)
+    db_type = serializers.CharField()
+    db_version = serializers.CharField(max_length=50)
+    db_mark = serializers.CharField(max_length=200)
     db_name = serializers.CharField(max_length=50)
     db_username = serializers.CharField(max_length=32)
-    db_password = serializers.CharField(max_length=64)
+    db_password = serializers.CharField(max_length=128)
     db_port = serializers.CharField()
     create_user = serializers.CharField(max_length=20)
 
@@ -88,17 +87,17 @@ class DBServerConfigSerializer(serializers.ModelSerializer):
     #     return ret
 
     def update(self, instance, validated_data):
-        if "password" in validated_data:
-            if instance.password == validated_data["password"]:
-                instance.password = instance.get_password_display('password')
+        if "db_password" in validated_data:
+            if instance.db_password == validated_data["db_password"]:
+                instance.db_password = instance.get_password_display('db_password')
             else:
-                instance.password = validated_data.get('password',instance.password)
+                instance.db_password = validated_data.get('db_password',instance.db_password)
         # instance.client_name = validated_data.get('client_name', instance.client_name)
         instance.db_env = validated_data.get('db_env', instance.db_env)
         instance.db_ip = validated_data.get('db_ip', instance.db_ip)
         instance.db_type = validated_data.get('db_type', instance.db_type)
         instance.db_version = validated_data.get('db_version', instance.db_version)
-        instance.mark = validated_data.get('db_mark', instance.db_mark)
+        instance.db_mark = validated_data.get('db_mark', instance.db_mark)
         instance.db_name = validated_data.get('db_name', instance.db_name)
         instance.db_username = validated_data.get('db_username', instance.db_username)
         instance.db_port = validated_data.get('db_port', instance.db_port)

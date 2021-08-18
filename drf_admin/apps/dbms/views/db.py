@@ -247,11 +247,13 @@ class DBServerConfigGenericView(ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         username = request.user.get_username()
         request.data["create_user"] = username
+        print(request.data)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, headers=headers)
+
 
 
 class DBTypeAPIView(ChoiceAPIView):
