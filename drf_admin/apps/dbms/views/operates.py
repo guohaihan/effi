@@ -1,13 +1,10 @@
-from rest_framework import mixins
-from rest_framework.mixins import RetrieveModelMixin
-
-from dbms.models import SqlOperationLog, DBServerConfig
+from dbms.models import OperateLogs, DBServerConfig
 from rest_framework.response import Response
 from django_filters.rest_framework.filterset import FilterSet
 from django_filters import filters
 from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
-from dbms.serializers.sqlserializers import SqlOperationLogSerializer, DBServerConfigSerializer
+from dbms.serializers.operates import OperateLogsSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from django.http import HttpResponse
 import pymysql
@@ -21,7 +18,7 @@ from drf_admin.utils.models import BaseModel, BasePasswordModels
 import base64
 from Crypto.Cipher import AES
 from django.conf import settings
-
+from rest_framework.filters import SearchFilter
 from drf_admin.utils.views import ChoiceAPIView
 
 
@@ -87,7 +84,7 @@ class MysqlList(object):
         return db_list
 
 
-class GetDatabaseView(APIView):
+class DatabasesView(APIView):
     """
     get:
     数据库操作--连接数据库
@@ -114,12 +111,12 @@ class GetDatabaseView(APIView):
         拼接数据库连接信息
         """
         queryset = DBServerConfig.objects.filter(id=pk).values()[0]
-        user = queryset["username"]
-        passwd = self.get_password_display(queryset["password"])
-        port = queryset["port"]
+        user = queryset["db_username"]
+        passwd = self.get_password_display(queryset["db_password"])
+        port = queryset["db_port"]
         db_name = None
-        host = queryset["host"]
-        environment = queryset["environment"]
+        host = queryset["db_ip"]
+        environment = queryset["db_env"]
         return {"host": host,
                 "user": user,
                 "passwd": passwd,
@@ -141,8 +138,8 @@ class GetDatabaseView(APIView):
         base_data = self.base(pk)
         # conn = get_redis_connection('user_info')
         username = request.user.get_username()
-        database_name = request.data["database_name"]
-        sql_data = request.data["sql_data"]
+        database_name = request.data["db_name"]
+        sql_data = request.data["operate_sql"]
         if not sql_data:
             return HttpResponse({"没有要执行的sql！"})
         if not database_name:
@@ -161,15 +158,15 @@ class GetDatabaseView(APIView):
                     status = 0
                     error_info = str(sql_info["error"])
                 data = {
-                    "environment": base_data["environment"],
-                    "database_name": database_name_i,
-                    "operational_data": result_i,
-                    "user": username,
+                    "env": base_data["environment"],
+                    "db_name": database_name_i,
+                    "operate_sql": result_i,
+                    "performer": username,
                     "status": status,
                     "error_info": error_info
                 }
                 # 将执行结果记录到日志
-                OperationLogGenericView().create(data)
+                OperateLogsView().create(data)
             if flag:
                 break
 
@@ -178,27 +175,27 @@ class GetDatabaseView(APIView):
 
 class MyFilterSet(FilterSet):
     # 自定义过滤字段
-    operational_data = filters.CharFilter(field_name="operational_data", lookup_expr="icontains")
+    operational_data = filters.CharFilter(field_name="operate_sql", lookup_expr="icontains")
     status = filters.CharFilter(field_name="status", lookup_expr="icontains")
 
     class Meta:
-        model = SqlOperationLog
-        fields = ["operational_data", "status"]
+        model = OperateLogs
+        fields = ["operate_sql", "status"]
 
 
-class OperationLogGenericAPIView(RetrieveAPIView):
+class OperateLogsPkView(RetrieveAPIView):
     """
     get:
     数据库执行日志--详情信息
 
     获取信息详情, status: 201(成功), return: 日志详情
     """
-    # 获取、更新、删除某个执行日志
-    queryset = SqlOperationLog.objects.order_by("-create_time")
-    serializer_class = SqlOperationLogSerializer
+    # 获取某个执行日志详情
+    queryset = OperateLogs.objects.order_by("-create_time")
+    serializer_class = OperateLogsSerializer
 
 
-class OperationLogGenericView(ListCreateAPIView):
+class OperateLogsView(ListCreateAPIView):
     """
     get:
     数据库执行日志--列表
@@ -210,94 +207,15 @@ class OperationLogGenericView(ListCreateAPIView):
     创建日志, status: 201(成功), return: 日志信息
     """
     # 创建和获取执行日志
-    queryset = SqlOperationLog.objects.order_by("-create_time")
-    serializer_class = SqlOperationLogSerializer
-    # 设置查询字段
-    filter_backends = [DjangoFilterBackend]
-    filter_class = MyFilterSet
+    queryset = OperateLogs.objects.order_by("-create_time")
+    serializer_class = OperateLogsSerializer
+    # 自定义过滤字段
+    filter_backends = (DjangoFilterBackend, SearchFilter)
+    filter_fields = ['status', "env"]
+    search_fields = ("operate_sql", "db_name")
 
     def create(self, data):
-        serializer = SqlOperationLogSerializer(data=data)
+        serializer = OperateLogsSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         return Response(serializer.data)
-
-
-class DBServerConfigGenericAPIView(RetrieveUpdateDestroyAPIView):
-    """
-    get:
-    数据库--详情信息
-
-    获取数据库, status: 201(成功), return: 服务器信息
-    put:
-    数据库--更新信息
-
-    数据库更新, status: 201(成功), return: 更新后信息
-
-    patch:
-    数据库--更新信息
-
-    数据库更新, status: 201(成功), return: 更新后信息
-
-    delete:
-    数据库--删除
-
-    数据库删除, status: 201(成功), return: None
-    """
-    # 获取、更新、删除某个数据库信息
-    queryset = DBServerConfig.objects.order_by("-update_time")
-    serializer_class = DBServerConfigSerializer
-
-    def put(self, request, *args, **kwargs):
-        username = request.user.get_username()
-        request.data["create_user"] = username
-        partial = kwargs.pop('partial', False)
-        instance = self.get_object()
-        serializer = self.get_serializer(instance, data=request.data, partial=partial)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-
-        if getattr(instance, '_prefetched_objects_cache', None):
-            # If 'prefetch_related' has been applied to a queryset, we need to
-            # forcibly invalidate the prefetch cache on the instance.
-            instance._prefetched_objects_cache = {}
-        return Response(serializer.data)
-
-
-class AccountsLogGenericView(ListCreateAPIView):
-    """
-    get:
-    数据库--列表
-
-    数据库列表, status: 201(成功), return: 列表
-    post:
-    数据库--创建
-
-    数据库创建, status: 201(成功), return: 服务器信息
-    """
-    # 创建和获取数据库信息
-    queryset = DBServerConfig.objects.order_by("-update_time")
-    serializer_class = DBServerConfigSerializer
-    # 设置查询字段
-    filter_backends = [DjangoFilterBackend]
-
-    def post(self, request, *args, **kwargs):
-        username = request.user.get_username()
-        request.data["create_user"] = username
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, headers=headers)
-
-
-class DbTypeAPIView(ChoiceAPIView):
-    """
-    get:
-    数据库-models类型列表
-
-    数据库models中的类型列表信息, status: 200(成功), return: 服务器models中的类型列表
-    """
-    choice = DBServerConfig.database_type_choice
-
-
