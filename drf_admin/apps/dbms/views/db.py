@@ -2,7 +2,7 @@ from dbms.models import DBServerConfig
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
 from dbms.serializers.dbs import DBServerConfigSerializer
-from django_filters.rest_framework import DjangoFilterBackend
+from django_filters.rest_framework import DjangoFilterBackend, OrderingFilter
 from rest_framework.filters import SearchFilter
 from drf_admin.utils.views import ChoiceAPIView
 
@@ -65,7 +65,7 @@ class DBServerConfigGenericView(ListCreateAPIView):
     queryset = DBServerConfig.objects.order_by("-update_time")
     serializer_class = DBServerConfigSerializer
     # 自定义过滤字段
-    filter_backends = (DjangoFilterBackend, SearchFilter, OrderingFilter)
+    filter_backends = (DjangoFilterBackend, SearchFilter)
     search_fields = ('db_name','db_ip')
 
     def post(self, request, *args, **kwargs):
