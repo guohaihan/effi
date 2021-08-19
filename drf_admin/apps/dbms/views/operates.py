@@ -6,20 +6,13 @@ from rest_framework.views import APIView
 from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
 from dbms.serializers.operates import OperateLogsSerializer
 from django_filters.rest_framework import DjangoFilterBackend
-from django.http import HttpResponse
 import pymysql
 import re
-import json
-import requests
 from django.shortcuts import redirect
-from django.urls import reverse
-from django_redis import get_redis_connection
-from drf_admin.utils.models import BaseModel, BasePasswordModels
 import base64
 from Crypto.Cipher import AES
 from django.conf import settings
 from rest_framework.filters import SearchFilter
-from drf_admin.utils.views import ChoiceAPIView
 
 
 class MysqlList(object):
@@ -37,15 +30,18 @@ class MysqlList(object):
         :param sql: sql语句
         :return: 元祖
         """
-        conn = pymysql.connect(
-            host=self.host,
-            user=self.user,
-            passwd=self.passwd,
-            port=self.port,
-            database=self.db_name,
-            charset='utf8',
-            cursorclass=pymysql.cursors.DictCursor
-        )
+        try:
+            conn = pymysql.connect(
+                host=self.host,
+                user=self.user,
+                passwd=self.passwd,
+                port=self.port,
+                database=self.db_name,
+                charset='utf8',
+                cursorclass=pymysql.cursors.DictCursor
+            )
+        except Exception as e:
+            return {"error": "连接数据库失败！失败原因：%s" % e}
         try:
             cur = conn.cursor()  # 创建游标
             # conn.cursor()
@@ -57,7 +53,7 @@ class MysqlList(object):
             return res
         except Exception as e:
             conn.rollback()
-            return {"error": e}
+            return {"error": "sql执行失败！失败原因：%s" % e}
 
     def get_all_db(self):
         """
@@ -68,20 +64,13 @@ class MysqlList(object):
         exclude_list = ["sys", "information_schema", "mysql", "performance_schema"]
         sql = "show databases"  # 显示所有数据库
         res = self.select(sql)
-        if not res:  # 判断结果非空
-            return False
+        if "error" in res:  # 判断结果非空
+            return res
 
-        db_list = []  # 数据库列表
-        for i in res:
-            db_name = i['Database']
-            # 判断不在排除列表时
-            if db_name not in exclude_list:
-                db_list.append(db_name)
+        if not res:
+            return {"error": "数据库为空！"}
 
-        if not db_list:
-            return False
-
-        return db_list
+        return res
 
 
 class DatabasesView(APIView):
@@ -110,51 +99,58 @@ class DatabasesView(APIView):
         """
         拼接数据库连接信息
         """
-        queryset = DBServerConfig.objects.filter(id=pk).values()[0]
-        user = queryset["db_username"]
-        passwd = self.get_password_display(queryset["db_password"])
-        port = queryset["db_port"]
-        db_name = None
-        host = queryset["db_ip"]
-        environment = queryset["db_env"]
-        return {"host": host,
-                "user": user,
-                "passwd": passwd,
-                "db_name": db_name,
-                "port": port,
-                "environment": environment
-                }
+        try:
+            queryset = DBServerConfig.objects.filter(id=pk).values()[0]
+            user = queryset["db_username"]
+            passwd = self.get_password_display(queryset["db_password"])
+            port = queryset["db_port"]
+            db_name = None
+            host = queryset["db_ip"]
+            environment = queryset["db_env"]
+        except:
+            return {"error": "获取数据库连接的基本信息失败！"}
+        return {
+            "host": host,
+            "user": user,
+            "passwd": passwd,
+            "db_name": db_name,
+            "port": port,
+            "environment": environment
+        }
 
     def get(self, request, pk):
-        sql_data = self.base(pk)
-
+        base_data = self.base(pk)
+        if "error" in base_data:
+            return Response(status=400, data={"error": base_data["error"]})
         # 获取某个环境的数据库
-        obj = MysqlList(sql_data["host"], sql_data["user"], sql_data["passwd"], sql_data["port"], sql_data["db_name"])
+        obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"], base_data["db_name"])
         all_db_list = obj.get_all_db()
+        if "error" in all_db_list:
+            return Response(status=400, data={"error": all_db_list["error"]})
         return Response(all_db_list)
 
     def post(self, request, pk):
         # 执行sql，并记录到日志
         base_data = self.base(pk)
+        if "error" in base_data:
+            return Response(status=400, data={"error": base_data["error"]})
         # conn = get_redis_connection('user_info')
         username = request.user.get_username()
         database_name = request.data["db_name"]
         sql_data = request.data["operate_sql"]
         if not sql_data:
-            return HttpResponse({"没有要执行的sql！"})
+            return Response(status=400, data={"error": "没有要执行的sql"})
         if not database_name:
-            return HttpResponse({"请选择要执行的数据库！"})
+            return Response(status=400, data={"error": "请选择要执行的数据库！"})
         pattern = re.compile(r'.*?;', re.DOTALL)
         result = pattern.findall(sql_data)
         for result_i in result:
-            flag = False
             status = 1
-            error_info = "null"
+            error_info = ""
             for database_name_i in database_name:
                 obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"], database_name_i)
                 sql_info = obj.select(result_i)
                 if "error" in sql_info:
-                    flag = True
                     status = 0
                     error_info = str(sql_info["error"])
                 data = {
@@ -167,7 +163,9 @@ class DatabasesView(APIView):
                 }
                 # 将执行结果记录到日志
                 OperateLogsView().create(data)
-            if flag:
+                if error_info:
+                    break
+            if error_info:
                 break
 
         return redirect("log_record")
@@ -214,7 +212,7 @@ class OperateLogsView(ListCreateAPIView):
     filter_fields = ['status', "env"]
     search_fields = ("operate_sql", "db_name")
 
-    def create(self, data):
+    def create(self, data, **kwargs):
         serializer = OperateLogsSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)

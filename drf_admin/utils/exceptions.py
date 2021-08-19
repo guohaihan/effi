@@ -58,7 +58,7 @@ def errors_handler(exc):
             msg = exc.detail
     except Exception:
         msg = exc.detail
-    data = {'detail': msg}
+    data = {'error': msg}
     return data
 
 
@@ -90,7 +90,7 @@ def exception_handler(exc, context):
         detail = traceback.format_exc()
         write_error_logs(exc, context, detail)
         logger.error('[%s] %s' % (view, detail))
-        response = Response({'detail': '服务器内部错误'}, status=status.HTTP_507_INSUFFICIENT_STORAGE)
+        response = Response({'error': '服务器内部错误'}, status=status.HTTP_507_INSUFFICIENT_STORAGE)
     else:
         # 未知错误
         view = context['view']
@@ -98,7 +98,7 @@ def exception_handler(exc, context):
         detail = traceback.format_exc()
         write_error_logs(exc, context, detail)
         logger.error('[%s] %s' % (view, detail))
-        response = Response({'detail': '服务端未知错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        response = Response({'error': '服务端未知错误'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
     return response
 
 
