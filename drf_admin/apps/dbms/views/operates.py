@@ -69,7 +69,11 @@ class MysqlList(object):
 
         if not res:
             return {"error": "数据库为空！"}
-
+        for i in res:
+            db_name = i['Database']
+            # 判断不在排除列表时
+            if db_name in exclude_list:
+                res.remove(i)
         return res
 
 
