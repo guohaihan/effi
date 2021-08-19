@@ -23,7 +23,7 @@ class Sqlscripts(BaseModel):
 
 
 class OperateLogs(models.Model):
-    env = models.CharField(max_length=20, verbose_name="环境")
+    env = models.CharField(max_length=20, verbose_name="执行环境")
     db_name = models.CharField(max_length=50, verbose_name="数据库名")
     operate_sql = models.TextField(verbose_name="执行语句")
     performer = models.CharField(max_length=20, verbose_name="执行者")

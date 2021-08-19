@@ -9,7 +9,7 @@
 import json
 import logging
 import time
-
+import math
 from django.utils.deprecation import MiddlewareMixin
 from django_redis import get_redis_connection
 from rest_framework import status
@@ -81,28 +81,25 @@ class ResponseMiddleware(MiddlewareMixin):
         if isinstance(response, Response) and response.get('content-type') == 'application/json':
             if response.status_code >= 500:
                 msg = '服务端异常'
-                detail = response.data.get('detail')
                 error = response.data.get("error")
                 code = response.status_code
-                data = {}
             elif response.status_code >= 400:
                 msg = '客户端异常'
-                detail = response.data.get('detail')
                 error = response.data.get("error")
                 code = response.status_code
-                data = {}
             elif str(response.status_code).startswith('2'):
                 msg = '成功'
-                detail = None
-                error = None
                 code = response.status_code
                 data = response.data
+                if "results" in response.data:
+                    data["pages"] = math.ceil(int(response.data["count"])/int(request.GET["size"]))
+                    data["current"] = int(request.GET["page"])
+                    data["size"] = int(request.GET["size"])
+                    del [response.data["next"], response.data["previous"]]
             else:
                 return response
             if str(code).startswith("2"):
-                response.data = {'data': data}
-            elif detail:
-                response.data = {'msg': msg, 'errors': detail, 'code': code}
+                response.data = {'msg': msg, 'code': code, "data": data}
             else:
                 response.data = {'msg': msg, 'errors': error, 'code': code}
             response.content = response.rendered_content
