@@ -67,17 +67,10 @@ class MysqlList(object):
         if "error" in res:  # 判断结果非空
             return res
 
-        db_list = []  # 数据库列表
-        for i in res:
-            db_name = i['Database']
-            # 判断不在排除列表时
-            if db_name not in exclude_list:
-                db_list.append(db_name)
-
-        if not db_list:
+        if not res:
             return {"error": "数据库为空！"}
 
-        return db_list
+        return res
 
 
 class DatabasesView(APIView):

@@ -92,9 +92,10 @@ class ResponseMiddleware(MiddlewareMixin):
                 code = response.status_code
                 data = response.data
                 if "results" in response.data:
-                    data["pages"] = math.ceil(int(response.data["count"])/int(request.GET["size"]))
-                    data["current"] = int(request.GET["page"])
-                    data["size"] = int(request.GET["size"])
+                    if "page" in request.GET and "size" in request.GET:
+                        data["pages"] = math.ceil(int(response.data["count"])/int(request.GET["size"]))
+                        data["current"] = int(request.GET["page"])
+                        data["size"] = int(request.GET["size"])
                     del [response.data["next"], response.data["previous"]]
             else:
                 return response
