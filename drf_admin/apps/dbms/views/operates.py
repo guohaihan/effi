@@ -13,6 +13,8 @@ import base64
 from Crypto.Cipher import AES
 from django.conf import settings
 from rest_framework.filters import SearchFilter
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 class MysqlList(object):
@@ -122,6 +124,17 @@ class DatabasesView(APIView):
             "environment": environment
         }
 
+    @swagger_auto_schema(responses={200: openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        title="db_info",
+        properties={
+            "Database": openapi.Schema(
+                title="Database",
+                type=openapi.TYPE_STRING,
+            ),
+        },
+        required=["Database"]
+    )})
     def get(self, request, pk):
         base_data = self.base(pk)
         if "error" in base_data:
@@ -133,6 +146,22 @@ class DatabasesView(APIView):
             return Response(status=400, data={"error": all_db_list["error"]})
         return Response(all_db_list)
 
+    @swagger_auto_schema(request_body=openapi.Schema(
+            type=openapi.TYPE_OBJECT,
+            title="Operate_sql",
+            properties={
+                "db_name": openapi.Schema(
+                    title="db_name",
+                    type=openapi.TYPE_STRING,
+                    description="将db_name放在列表中传递"
+                ),
+                "operate_sql": openapi.Schema(
+                    title="operate_sql",
+                    type=openapi.TYPE_STRING,
+                ),
+            },
+            required=["db_name", "operate_sql"]
+    ))
     def post(self, request, pk):
         # 执行sql，并记录到日志
         base_data = self.base(pk)
