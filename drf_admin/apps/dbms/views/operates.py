@@ -148,6 +148,8 @@ class DatabasesView(APIView):
             return Response(status=400, data={"error": "请选择要执行的数据库！"})
         pattern = re.compile(r'.*?;', re.DOTALL)
         result = pattern.findall(sql_data)
+        if not result:
+            return Response(status=400, data={"error": "sql缺少';'号！"})
         for result_i in result:
             status = 1
             error_info = ""
