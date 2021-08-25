@@ -199,11 +199,9 @@ class DatabasesView(APIView):
                 # 将执行结果记录到日志
                 OperateLogsView().create(data)
                 if error_info:
-                    break
-            if error_info:
-                break
+                    return Response("存在执行失败的sql，请去sql执行日志中查看！")
 
-        return redirect("log_record")
+        return Response("恭喜你，全部sql执行成功！")
 
 
 class MyFilterSet(FilterSet):
