@@ -21,6 +21,7 @@ from django.views.decorators.clickjacking import xframe_options_exempt
 from drf_yasg import openapi
 from drf_yasg.views import get_schema_view
 from rest_framework import permissions
+from drf_admin.utils import views
 
 # swagger API文档配置 https://github.com/axnsan12/drf-yasg
 schema_view = get_schema_view(
@@ -57,5 +58,6 @@ urlpatterns = [
          xframe_options_exempt(schema_view.with_ui('swagger', cache_timeout=0)), name='schema-swagger-ui'),
     path(f'{base_api}redoc/',
          xframe_options_exempt(schema_view.with_ui('redoc', cache_timeout=0)), name='schema-redoc'),
+    path(f'{base_api}files/', views.upload_file),  # 读取上传文件
 ]
 urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -11,5 +11,5 @@ urlpatterns = [
     path("operates/logs/<pk>/", operates.OperateLogsPkView.as_view()),
     path("db/type/", db.DBTypeAPIView.as_view()),
     path("db/", db.DBServerConfigGenericView.as_view()),
-    path("db/<pk>/", db.DBServerConfigGenericAPIView.as_view())
+    path("db/<pk>/", db.DBServerConfigGenericAPIView.as_view()),
 ]

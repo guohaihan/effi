@@ -96,7 +96,8 @@ class ResponseMiddleware(MiddlewareMixin):
                         data["pages"] = math.ceil(int(response.data["count"])/int(request.GET["size"]))
                         data["current"] = int(request.GET["page"])
                         data["size"] = int(request.GET["size"])
-                    del [response.data["next"], response.data["previous"]]
+                    if "next" in response.data and "previous" in response.data:
+                        del [response.data["next"], response.data["previous"]]
             else:
                 return response
             if str(code).startswith("2"):

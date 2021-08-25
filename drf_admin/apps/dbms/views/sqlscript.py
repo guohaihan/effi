@@ -5,7 +5,6 @@ from rest_framework.decorators import action
 from rest_framework.mixins import RetrieveModelMixin
 from rest_framework.response import Response
 from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
-from drf_admin.common.file_operations import FileOperations
 from rest_framework.viewsets import ModelViewSet
 from django_filters.rest_framework.filterset import FilterSet
 from django_filters import filters
