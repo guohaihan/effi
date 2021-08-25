@@ -11,7 +11,8 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import ModelViewSet
-
+from django.http import HttpResponse
+from django.views.decorators.csrf import csrf_exempt
 from drf_admin.utils.swagger_schema import OperationIDAutoSchema
 
 
@@ -104,3 +105,17 @@ class ChoiceAPIView(APIView):
         for values in self.choice:
             assert isinstance(values, tuple) and len(values) == 2, 'choice数据错误, 应为二维元组'
         return self.choice
+
+
+# 文件上传
+@csrf_exempt
+def upload_file(request):
+    if request.method != 'POST':
+        return HttpResponse('请求方法错误')
+    f = request.FILES['file']
+    if not f:
+        return HttpResponse('获取上传文件错误')
+    with open('drf_admin/media/files/%s' % f.name, 'w+', encoding="utf-8") as destination:
+        for chunk in f.chunks():
+            destination.write(chunk.decode())
+    return HttpResponse(f.chunks())
