@@ -1,9 +1,10 @@
-from dbms.models import OperateLogs, DBServerConfig
+from dbms.models import OperateLogs, DBServerConfig, Audits
 from rest_framework.response import Response
 from django_filters.rest_framework.filterset import FilterSet
 from django_filters import filters
 from rest_framework.views import APIView
-from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView
+from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView, \
+    get_object_or_404
 from dbms.serializers.operates import OperateLogsSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 import pymysql
@@ -15,6 +16,10 @@ from django.conf import settings
 from rest_framework.filters import SearchFilter
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
+from dbms.serializers.audits import AuditsSerializer
+from drf_admin.utils.views import AdminViewSet
+from rest_framework import status
+from rest_framework.decorators import action
 
 
 class MysqlList(object):
@@ -146,30 +151,14 @@ class DatabasesView(APIView):
             return Response(status=400, data={"error": all_db_list["error"]})
         return Response(all_db_list)
 
-    @swagger_auto_schema(request_body=openapi.Schema(
-            type=openapi.TYPE_OBJECT,
-            title="Operate_sql",
-            properties={
-                "db_name": openapi.Schema(
-                    title="db_name",
-                    type=openapi.TYPE_STRING,
-                    description="将db_name放在列表中传递"
-                ),
-                "operate_sql": openapi.Schema(
-                    title="operate_sql",
-                    type=openapi.TYPE_STRING,
-                ),
-            },
-            required=["db_name", "operate_sql"]
-    ))
-    def post(self, request, pk):
+    def post(self, request):
         # 执行sql，并记录到日志
-        base_data = self.base(pk)
+        base_data = self.base(request.data["db"])
         if "error" in base_data:
             return Response(status=400, data={"error": base_data["error"]})
         # conn = get_redis_connection('user_info')
-        username = request.user.get_username()
-        database_name = request.data["db_name"]
+        username = request.data["user"]
+        database_name = eval(request.data["excute_db_name"])
         sql_data = request.data["operate_sql"]
         if not sql_data:
             return Response(status=400, data={"error": "没有要执行的sql"})
@@ -249,4 +238,91 @@ class OperateLogsView(ListCreateAPIView):
         serializer = OperateLogsSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
+        return Response(serializer.data)
+
+
+class AuditsViewSet(AdminViewSet):
+    """
+    get:
+    列表
+
+    审核列表, status: 201(成功), return: 列表
+    post:
+    创建
+
+    创建审核, status: 201(成功), return: 添加信息
+    put/<pk>/:
+    更新一个
+
+    进行审核操作, status: 201(成功), return: 更新后信息
+    get/<pk>/:
+    审核详情--信息
+
+    审核信息, status: 201(成功), return: 审核数据信息
+    multiple_update:
+    批量更新
+
+    审核信息, status: 201(成功), return: 更新后数据信息
+    """
+    queryset = Audits.objects.all()
+    serializer_class = AuditsSerializer
+    # 自定义过滤字段
+    filter_backends = (DjangoFilterBackend,)
+
+    def create(self, request, *args, **kwargs):
+        if "excute_db_name" in request.data:
+            request.data["excute_db_name"] = str(request.data["excute_db_name"])
+        user = request.user.get_username()
+        request.data["user"] = user
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def retrieve(self, request, *args, **kwargs):
+        instance = self.get_object()
+        serializer = self.get_serializer(instance)
+        return Response(serializer.data)
+
+    @action(methods=['put'], detail=False)
+    def multiple_update(self, request, *args, **kwargs):
+        if "excute_db_name" in request.data:
+            request.data["excute_db_name"] = str(request.data["excute_db_name"])
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        instances = []  # 这个变量是用于保存修改过后的对象，返回给前端
+        pks = request.query_params.get('pks', None)
+        for pk in pks.split(','):
+            auditor = request.user.get_username()
+            request.data["auditor"] = auditor
+            instance = get_object_or_404(Audits, id=pk)  # 通过ORM查找实例
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            instances.append(serializer.data)  # 将数据添加到列表中
+        return Response(instances)
+
+    def update(self, request, pk=None, *args, **kwargs):
+        if "excute_db_name" in request.data:
+            request.data["excute_db_name"] = str(request.data["excute_db_name"])
+        auditor = request.user.get_username()
+        request.data["auditor"] = auditor
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
         return Response(serializer.data)

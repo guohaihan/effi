@@ -22,6 +22,7 @@ class Sqlscripts(BaseModel):
         verbose_name_plural = verbose_name
 
 
+# sql执行记录表
 class OperateLogs(models.Model):
     env = models.CharField(max_length=20, verbose_name="执行环境")
     db_name = models.CharField(max_length=50, verbose_name="数据库名")
@@ -37,6 +38,7 @@ class OperateLogs(models.Model):
         verbose_name_plural = verbose_name
 
 
+# 数据库信息表
 class DBServerConfig(BasePasswordModels, BaseModel):
     """服务器登录账户表"""
     env_type_choice = (
@@ -68,3 +70,24 @@ class DBServerConfig(BasePasswordModels, BaseModel):
         verbose_name = '数据库连接信息'
         verbose_name_plural = verbose_name
         ordering = ['update_time']
+
+
+# sql审核表
+class Audits(BaseModel):
+    status_choice = (
+        (0, "待审核"),
+        (1, "审核通过"),
+        (2, "审核驳回")
+    )
+    db = models.ForeignKey(DBServerConfig, on_delete=models.CASCADE, verbose_name="关联数据库id")
+    excute_db_name = models.TextField(verbose_name="要执行的数据库名")
+    operate_sql = models.TextField(verbose_name="要执行的sql")
+    user = models.CharField(max_length=20, verbose_name="申请人")
+    auditor = models.CharField(max_length=20, default=None, verbose_name="审核人", blank=True)
+    status = models.IntegerField(choices=status_choice, default=0, verbose_name="审核状态")
+    reason = models.CharField(max_length=200, verbose_name="驳回理由", blank=True)
+
+    class Meta:
+        db_table = "dbms_audits"
+        verbose_name = "sql审核表"
+        verbose_name_plural = verbose_name
