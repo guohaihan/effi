@@ -151,46 +151,102 @@ class DatabasesView(APIView):
             return Response(status=400, data={"error": all_db_list["error"]})
         return Response(all_db_list)
 
+    @swagger_auto_schema(responses={200: openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        title="请求体",
+        properties={
+            "data": openapi.Schema(
+                title="此请求体用审核通过后的响应data，格式为{'data': data}",
+                type=openapi.TYPE_STRING,
+            ),
+        },
+        required=["请求体"]
+    )})
     def post(self, request):
-        # 执行sql，并记录到日志
-        base_data = self.base(request.data["db"])
-        if "error" in base_data:
-            return Response(status=400, data={"error": base_data["error"]})
-        # conn = get_redis_connection('user_info')
-        username = request.data["user"]
-        database_name = eval(request.data["excute_db_name"])
-        sql_data = request.data["operate_sql"]
-        if not sql_data:
-            return Response(status=400, data={"error": "没有要执行的sql"})
-        if not database_name:
-            return Response(status=400, data={"error": "请选择要执行的数据库！"})
-        pattern = re.compile(r'.*?;', re.DOTALL)
-        result = pattern.findall(sql_data)
-        if not result:
-            return Response(status=400, data={"error": "sql缺少';'号！"})
-        for result_i in result:
-            status = 1
-            error_info = ""
-            for database_name_i in database_name:
-                obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"], database_name_i)
-                sql_info = obj.select(result_i)
-                if "error" in sql_info:
-                    status = 0
-                    error_info = str(sql_info["error"])
-                data = {
-                    "env": base_data["environment"],
-                    "db_name": database_name_i,
-                    "operate_sql": result_i,
-                    "performer": username,
-                    "status": status,
-                    "error_info": error_info
+        request_data = []
+        error_list = []
+        if isinstance(request.data["data"], dict):
+            request_data.append(request.data["data"])
+        elif isinstance(request.data["data"], list):
+            request_data += request.data["data"]
+        else:
+            return Response(status=400, data={"error": "请求体数据格式错误！"})
+        # 遍历请求数据
+        for request_data_i in request_data:
+            # 执行sql，并记录到日志
+            base_data = self.base(request_data_i["db"])
+            if "error" in base_data:
+                error_data = {
+                    "id": request_data_i["id"],
+                    "error": base_data["error"]
                 }
-                # 将执行结果记录到日志
-                OperateLogsView().create(data)
+                error_list.append(error_data)
+                break
+            # conn = get_redis_connection('user_info')
+            username = request_data_i["user"]
+            database_name = eval(request_data_i["excute_db_name"])
+            sql_data = request_data_i["operate_sql"]
+            if not sql_data:
+                error_data = {
+                    "id": request_data_i["id"],
+                    "error": "没有要执行的sql"
+                }
+                error_list.append(error_data)
+                break
+            if not database_name:
+                error_data = {
+                    "id": request_data_i["id"],
+                    "error": "请选择要执行的数据库！"
+                }
+                error_list.append(error_data)
+                break
+            pattern = re.compile(r'.*?;', re.DOTALL)
+            result = pattern.findall(sql_data)
+            if not result:
+                error_data = {
+                    "id": request_data_i["id"],
+                    "error": "sql缺少';'号！"
+                }
+                error_list.append(error_data)
+                break
+                # return Response(status=400, data={"error": "sql缺少';'号！"})
+            # 遍历sql语句
+            for result_i in result:
+                status = 1
+                error_info = ""
+                # 遍历数据库
+                for database_name_i in database_name:
+                    obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"],
+                                    database_name_i)
+                    # 执行sql操作
+                    sql_info = obj.select(result_i)
+                    if "error" in sql_info:
+                        status = 0
+                        error_info = str(sql_info["error"])
+                    data = {
+                        "env": base_data["environment"],
+                        "db_name": database_name_i,
+                        "operate_sql": result_i,
+                        "performer": username,
+                        "status": status,
+                        "error_info": error_info
+                    }
+                    # 将执行结果记录到日志
+                    OperateLogsView().create(data)
+                    if error_info:
+                        error_data = {
+                            "id": request_data_i["id"],
+                            "error": "存在执行失败的sql，请去sql执行日志中查看！"
+                        }
+                        error_list.append(error_data)
+                        break
+                        # return Response("存在执行失败的sql，请去sql执行日志中查看！")
                 if error_info:
-                    return Response("存在执行失败的sql，请去sql执行日志中查看！")
-
-        return Response("恭喜你，全部sql执行成功！")
+                        break
+        if error_list:
+            return Response(status=400, data={"error": error_list})
+        else:
+            return Response("恭喜你，全部sql执行成功！")
 
 
 class MyFilterSet(FilterSet):
@@ -279,22 +335,6 @@ class AuditsViewSet(AdminViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
-
-        page = self.paginate_queryset(queryset)
-        if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
-    def retrieve(self, request, *args, **kwargs):
-        instance = self.get_object()
-        serializer = self.get_serializer(instance)
-        return Response(serializer.data)
 
     @action(methods=['put'], detail=False)
     def multiple_update(self, request, *args, **kwargs):
