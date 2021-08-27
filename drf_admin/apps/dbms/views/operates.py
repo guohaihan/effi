@@ -320,7 +320,7 @@ class AuditsViewSet(AdminViewSet):
 
     审核信息, status: 201(成功), return: 更新后数据信息
     """
-    queryset = Audits.objects.all()
+    queryset = Audits.objects.order_by("-update_time")
     serializer_class = AuditsSerializer
     # 自定义过滤字段
     filter_backends = (DjangoFilterBackend,)

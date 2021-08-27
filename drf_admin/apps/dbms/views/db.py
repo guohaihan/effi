@@ -33,8 +33,7 @@ class DBServerConfigGenericAPIView(RetrieveUpdateDestroyAPIView):
     serializer_class = DBServerConfigSerializer
 
     def put(self, request, *args, **kwargs):
-        if len(request.data) < 9:
-            kwargs['partial'] = True
+        kwargs['partial'] = True
         username = request.user.get_username()
         request.data["create_user"] = username
         partial = kwargs.pop('partial', False)
@@ -71,7 +70,6 @@ class DBServerConfigGenericView(ListCreateAPIView):
     def post(self, request, *args, **kwargs):
         username = request.user.get_username()
         request.data["create_user"] = username
-        print(request.data)
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
