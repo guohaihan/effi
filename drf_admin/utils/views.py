@@ -14,6 +14,7 @@ from rest_framework.viewsets import ModelViewSet
 from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from drf_admin.utils.swagger_schema import OperationIDAutoSchema
+from rest_framework.generics import get_object_or_404
 
 
 class MultipleDestroyMixin:
@@ -29,21 +30,54 @@ class MultipleDestroyMixin:
     def multiple_delete(self, request, *args, **kwargs):
         delete_ids = request.data.get('ids')
         if not delete_ids:
-            return Response(data={'detail': '参数错误,ids为必传参数'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={'error': '参数错误,ids为必传参数'}, status=status.HTTP_400_BAD_REQUEST)
         if not isinstance(delete_ids, list):
-            return Response(data={'detail': 'ids格式错误,必须为List'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={'error': 'ids格式错误,必须为List'}, status=status.HTTP_400_BAD_REQUEST)
         queryset = self.get_queryset()
         del_queryset = queryset.filter(id__in=delete_ids)
         if len(delete_ids) != del_queryset.count():
-            return Response(data={'detail': '删除数据不存在'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={'error': '删除数据不存在'}, status=status.HTTP_400_BAD_REQUEST)
         del_queryset.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-class AdminViewSet(ModelViewSet, MultipleDestroyMixin):
+class MultipleUpdateMixin:
     """
-    继承ModelViewSet, 并新增MultipleDestroyMixin
+    自定义批量更新mixin
+    """
+    swagger_schema = OperationIDAutoSchema
+
+    class MultipleUpdateSerializer(serializers.Serializer):
+        ids = serializers.ListField(required=True, write_only=True)
+
+    @swagger_auto_schema(request_body=MultipleUpdateSerializer)
+    def multiple_update(self, request, *args, **kwargs):
+        update_ids = request.data.get('ids')
+        if not update_ids:
+            return Response(data={'error': '参数错误,ids为必传参数'}, status=status.HTTP_400_BAD_REQUEST)
+        if not isinstance(update_ids, list):
+            return Response(data={'error': 'ids格式错误,必须为List'}, status=status.HTTP_400_BAD_REQUEST)
+        queryset = self.get_queryset()
+        update_queryset = queryset.filter(id__in=update_ids)
+        if len(update_ids) != update_queryset.count():
+            return Response(data={'error': '更新数据不存在'}, status=status.HTTP_400_BAD_REQUEST)
+        kwargs['partial'] = True
+        partial = kwargs.pop('partial', False)
+        instances = []  # 这个变量是用于保存修改过后的对象，返回给前端
+        for pk in update_ids:
+            instance = get_object_or_404(update_queryset, id=pk)
+            serializer = self.get_serializer(instance, data=request.data, partial=partial)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            instances.append(serializer.data)  # 将数据添加到列表中
+        return Response(instances)
+
+
+class AdminViewSet(ModelViewSet, MultipleDestroyMixin, MultipleUpdateMixin):
+    """
+    继承ModelViewSet, 并新增MultipleDestroyMixin, MultipleUpdateMixin
     添加multiple_delete action
+    添加multiple_update action
     """
     pass
 

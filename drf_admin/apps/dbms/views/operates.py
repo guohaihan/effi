@@ -3,13 +3,11 @@ from rest_framework.response import Response
 from django_filters.rest_framework.filterset import FilterSet
 from django_filters import filters
 from rest_framework.views import APIView
-from rest_framework.generics import GenericAPIView, RetrieveUpdateDestroyAPIView, ListCreateAPIView, RetrieveAPIView, \
-    get_object_or_404
+from rest_framework.generics import ListCreateAPIView, RetrieveAPIView
 from dbms.serializers.operates import OperateLogsSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 import pymysql
 import re
-from django.shortcuts import redirect
 import base64
 from Crypto.Cipher import AES
 from django.conf import settings
@@ -19,7 +17,6 @@ from drf_yasg import openapi
 from dbms.serializers.audits import AuditsSerializer
 from drf_admin.utils.views import AdminViewSet
 from rest_framework import status
-from rest_framework.decorators import action
 
 
 class MysqlList(object):
@@ -299,26 +296,34 @@ class OperateLogsView(ListCreateAPIView):
 
 class AuditsViewSet(AdminViewSet):
     """
-    get:
-    列表
+    list:
+    审核--列表
 
     审核列表, status: 201(成功), return: 列表
-    post:
-    创建
+    create:
+    审核--创建
 
     创建审核, status: 201(成功), return: 添加信息
-    put/<pk>/:
-    更新一个
+    update:
+    审核--更新，支持局部
 
     进行审核操作, status: 201(成功), return: 更新后信息
-    get/<pk>/:
-    审核详情--信息
+    retrieve:
+    审核--详情信息
 
     审核信息, status: 201(成功), return: 审核数据信息
     multiple_update:
-    批量更新
+    审核--批量更新，支持局部
 
     审核信息, status: 201(成功), return: 更新后数据信息
+    multiple_delete:
+    审核--批量删除
+
+    审核信息, status: 201(成功), return: null
+    destroy:
+    审核--删除
+
+    审核信息, status: 201(成功), return: null
     """
     queryset = Audits.objects.order_by("-update_time")
     serializer_class = AuditsSerializer
@@ -336,23 +341,12 @@ class AuditsViewSet(AdminViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    @action(methods=['put'], detail=False)
     def multiple_update(self, request, *args, **kwargs):
         if "excute_db_name" in request.data:
             request.data["excute_db_name"] = str(request.data["excute_db_name"])
-        kwargs['partial'] = True
-        partial = kwargs.pop('partial', False)
-        instances = []  # 这个变量是用于保存修改过后的对象，返回给前端
-        pks = request.query_params.get('pks', None)
-        for pk in pks.split(','):
-            auditor = request.user.get_username()
-            request.data["auditor"] = auditor
-            instance = get_object_or_404(Audits, id=pk)  # 通过ORM查找实例
-            serializer = self.get_serializer(instance, data=request.data, partial=partial)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-            instances.append(serializer.data)  # 将数据添加到列表中
-        return Response(instances)
+        auditor = request.user.get_username()
+        request.data["auditor"] = auditor
+        return super().multiple_update(request, *args, **kwargs)
 
     def update(self, request, pk=None, *args, **kwargs):
         if "excute_db_name" in request.data:

@@ -1,10 +1,8 @@
-from django.contrib import admin
 from django.urls import include, path
 from dbms.views import sqlscript, operates, db
-from drf_admin.utils import routers
-from rest_framework.routers import DefaultRouter
+from drf_admin.utils.routers import AdminRouter
 
-router = DefaultRouter()
+router = AdminRouter()
 router.register(r'audits', operates.AuditsViewSet, basename='audits')
 urlpatterns = router.urls
 urlpatterns += [

@@ -10,7 +10,7 @@ from rest_framework.routers import SimpleRouter, Route, DynamicRoute
 
 
 class AdminRouter(SimpleRouter):
-    # 添加multiple_delete动作
+    # 添加multiple_delete、multiple_update动作
     routes = [
         # List route.
         Route(
@@ -19,6 +19,7 @@ class AdminRouter(SimpleRouter):
                 'get': 'list',
                 'post': 'create',
                 'delete': 'multiple_delete',
+                'put': 'multiple_update'
             },
             name='{basename}-list',
             detail=False,
