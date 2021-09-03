@@ -173,37 +173,63 @@ class DatabasesView(APIView):
             # 执行sql，并记录到日志
             base_data = self.base(request_data_i["db"])
             if "error" in base_data:
-                error_data = {
-                    "id": request_data_i["id"],
-                    "error": base_data["error"]
-                }
+                if "id" in request_data_i:
+                    error_data = {
+                        "id": request_data_i["id"],
+                        "error": base_data["error"]
+                    }
+                else:
+                    error_data = {
+                        "error": base_data["error"]
+                    }
                 error_list.append(error_data)
                 break
             # conn = get_redis_connection('user_info')
-            username = request_data_i["user"]
-            database_name = eval(request_data_i["excute_db_name"])
+            if "user" in request_data_i:
+                username = request_data_i["user"]
+            else:
+                username = request.user.get_username()
+            if isinstance(request_data_i["excute_db_name"], list):
+                database_name = request_data_i["excute_db_name"]
+            else:
+                database_name = eval(request_data_i["excute_db_name"])
             sql_data = request_data_i["operate_sql"]
             if not sql_data:
-                error_data = {
-                    "id": request_data_i["id"],
-                    "error": "没有要执行的sql"
-                }
+                if "id" in request_data_i:
+                    error_data = {
+                        "id": request_data_i["id"],
+                        "error":  "没有要执行的sql"
+                    }
+                else:
+                    error_data = {
+                        "error":  "没有要执行的sql"
+                    }
                 error_list.append(error_data)
                 break
             if not database_name:
-                error_data = {
-                    "id": request_data_i["id"],
-                    "error": "请选择要执行的数据库！"
-                }
+                if "id" in request_data_i:
+                    error_data = {
+                        "id": request_data_i["id"],
+                        "error": "请选择要执行的数据库！"
+                    }
+                else:
+                    error_data = {
+                        "error": "请选择要执行的数据库！"
+                    }
                 error_list.append(error_data)
                 break
             pattern = re.compile(r'.*?;', re.DOTALL)
             result = pattern.findall(sql_data)
             if not result:
-                error_data = {
-                    "id": request_data_i["id"],
-                    "error": "sql缺少';'号！"
-                }
+                if "id" in request_data_i:
+                    error_data = {
+                        "id": request_data_i["id"],
+                        "error": "sql缺少';'号！"
+                    }
+                else:
+                    error_data = {
+                        "error": "sql缺少';'号！"
+                    }
                 error_list.append(error_data)
                 break
                 # return Response(status=400, data={"error": "sql缺少';'号！"})
@@ -231,10 +257,15 @@ class DatabasesView(APIView):
                     # 将执行结果记录到日志
                     OperateLogsView().create(data)
                     if error_info:
-                        error_data = {
-                            "id": request_data_i["id"],
-                            "error": "存在执行失败的sql，请去sql执行日志中查看！"
-                        }
+                        if "id" in request_data_i:
+                            error_data = {
+                                "id": request_data_i["id"],
+                                "error": "存在执行失败的sql，请去sql执行日志中查看！"
+                            }
+                        else:
+                            error_data = {
+                                "error": "存在执行失败的sql，请去sql执行日志中查看！"
+                            }
                         error_list.append(error_data)
                         break
                         # return Response("存在执行失败的sql，请去sql执行日志中查看！")
