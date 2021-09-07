@@ -114,7 +114,7 @@ class DatabasesView(APIView):
             port = queryset["db_port"]
             db_name = None
             host = queryset["db_ip"]
-            environment = queryset["db_env"]
+            environment = DBServerConfig.objects.filter(id=pk)[0].get_db_env_display()
         except:
             return {"error": "获取数据库连接的基本信息失败！"}
         return {
