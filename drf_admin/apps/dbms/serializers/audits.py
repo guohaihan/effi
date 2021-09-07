@@ -11,7 +11,8 @@ from dbms.models import Audits
 
 
 class AuditsSerializer(serializers.ModelSerializer):
-    db_env = serializers.SerializerMethodField(label="执行环境", read_only=True)
+    # 添加额外字段
+    db_env = serializers.SerializerMethodField(label="执行环境")
     class Meta:
         model = Audits
         fields = "__all__"

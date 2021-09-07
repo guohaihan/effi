@@ -352,7 +352,7 @@ class OperateLogsView(ListCreateAPIView):
     # 自定义过滤字段
     filter_backends = (DjangoFilterBackend, SearchFilter)
     filter_fields = ['status', "env"]
-    search_fields = ("operate_sql", "db_name")
+    search_fields = ("operate_sql", "db_name", "sprint")
 
     def create(self, data, **kwargs):
         serializer = OperateLogsSerializer(data=data)
@@ -395,7 +395,9 @@ class AuditsViewSet(AdminViewSet):
     queryset = Audits.objects.order_by("-update_time")
     serializer_class = AuditsSerializer
     # 自定义过滤字段
-    filter_backends = (DjangoFilterBackend,)
+    filter_backends = (DjangoFilterBackend, SearchFilter)
+    filter_fields = ["status"]
+    search_fields = ("sprint",)
 
     def create(self, request, *args, **kwargs):
         if "excute_db_name" in request.data:
