@@ -83,7 +83,7 @@ class Audits(BaseModel):
     excute_db_name = models.TextField(verbose_name="要执行的数据库名")
     operate_sql = models.TextField(verbose_name="要执行的sql")
     user = models.CharField(max_length=20, verbose_name="申请人")
-    auditor = models.CharField(max_length=20, default=None, verbose_name="审核人", blank=True)
+    auditor = models.CharField(max_length=20, default=None, verbose_name="审核人", blank=True, null=True)
     status = models.IntegerField(choices=status_choice, default=0, verbose_name="审核状态")
     reason = models.CharField(max_length=200, verbose_name="驳回理由", blank=True)
 
