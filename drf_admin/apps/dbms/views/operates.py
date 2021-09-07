@@ -162,6 +162,8 @@ class DatabasesView(APIView):
     def post(self, request):
         request_data = []
         error_list = []
+        if "data" not in request.data:
+            return Response(status=400, data={"error": "请求体数据格式错误！{'data': []或{}}"})
         if isinstance(request.data["data"], dict):
             request_data.append(request.data["data"])
         elif isinstance(request.data["data"], list):
@@ -171,6 +173,10 @@ class DatabasesView(APIView):
         # 遍历请求数据
         for request_data_i in request_data:
             # 执行sql，并记录到日志
+            if "db" not in request_data_i or "excute_db_name" not in request_data_i or "operate_sql" not in request_data_i:
+                return Response(status=400, data={"error": "请求体错误！"})
+            if not request_data_i["db"] or not request_data_i["excute_db_name"] or not request_data_i["operate_sql"]:
+                return Response(status=400, data={"error": "请求体不允许存在value为空的参数！"})
             base_data = self.base(request_data_i["db"])
             if "error" in base_data:
                 if "id" in request_data_i:
@@ -194,30 +200,6 @@ class DatabasesView(APIView):
             else:
                 database_name = eval(request_data_i["excute_db_name"])
             sql_data = request_data_i["operate_sql"]
-            if not sql_data:
-                if "id" in request_data_i:
-                    error_data = {
-                        "id": request_data_i["id"],
-                        "error":  "没有要执行的sql"
-                    }
-                else:
-                    error_data = {
-                        "error":  "没有要执行的sql"
-                    }
-                error_list.append(error_data)
-                break
-            if not database_name:
-                if "id" in request_data_i:
-                    error_data = {
-                        "id": request_data_i["id"],
-                        "error": "请选择要执行的数据库！"
-                    }
-                else:
-                    error_data = {
-                        "error": "请选择要执行的数据库！"
-                    }
-                error_list.append(error_data)
-                break
             pattern = re.compile(r'.*?;', re.DOTALL)
             result = pattern.findall(sql_data)
             if not result:
