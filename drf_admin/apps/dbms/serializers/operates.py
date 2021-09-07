@@ -49,3 +49,4 @@ class OperateLogsSerializer(serializers.ModelSerializer):
     create_time = serializers.DateTimeField(read_only=True)
     status = serializers.IntegerField()
     error_info = serializers.CharField(max_length=255, allow_blank=True)
+    sprint = serializers.CharField(max_length=50, default=None, allow_blank=True, allow_null=True)

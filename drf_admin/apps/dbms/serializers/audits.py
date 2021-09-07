@@ -11,6 +11,10 @@ from dbms.models import Audits
 
 
 class AuditsSerializer(serializers.ModelSerializer):
+    db_env = serializers.SerializerMethodField(label="执行环境", read_only=True)
     class Meta:
         model = Audits
         fields = "__all__"
+
+    def get_db_env(self, obj):
+        return obj.db.get_db_env_display()

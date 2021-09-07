@@ -31,6 +31,7 @@ class OperateLogs(models.Model):
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     status = models.IntegerField(choices=((0, '失败'), (1, '成功')), verbose_name='执行状态', default=1)
     error_info = models.CharField(max_length=255, default=None, verbose_name="message")
+    sprint = models.CharField(max_length=50, default=None, verbose_name="分支", blank=True, null=True)
 
     class Meta:
         db_table = "dbms_operate_logs"
@@ -86,6 +87,7 @@ class Audits(BaseModel):
     auditor = models.CharField(max_length=20, default=None, verbose_name="审核人", blank=True, null=True)
     status = models.IntegerField(choices=status_choice, default=0, verbose_name="审核状态")
     reason = models.CharField(max_length=200, verbose_name="驳回理由", blank=True)
+    sprint = models.CharField(max_length=50, default=None, verbose_name="分支", blank=True, null=True)
 
     class Meta:
         db_table = "dbms_audits"

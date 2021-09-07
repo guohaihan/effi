@@ -182,6 +182,9 @@ class DatabasesView(APIView):
         result = pattern.findall(sql_data)
         if not result:
             return Response(status=400, data={"error": "sql缺少';'号！"})
+        sprint = None
+        if "sprint" in request.data:
+            sprint = request.data["sprint"]
         # 遍历sql语句
         for result_i in result:
             status = 1
@@ -201,7 +204,8 @@ class DatabasesView(APIView):
                     "operate_sql": result_i,
                     "performer": username,
                     "status": status,
-                    "error_info": error_info
+                    "error_info": error_info,
+                    "sprint": sprint
                 }
                 # 将执行结果记录到日志
                 OperateLogsView().create(data)
