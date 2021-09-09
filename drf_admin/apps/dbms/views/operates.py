@@ -48,8 +48,10 @@ class MysqlList(object):
             return {"error": "连接数据库失败！失败原因：%s" % e}
         try:
             cur = conn.cursor()  # 创建游标
-            # conn.cursor()
-            cur.execute(sql)  # 执行sql命令
+            if isinstance(sql, str):
+                cur.execute(sql)  # 执行sql命令
+            else:
+                cur.executemany(sql, None)  # 执行sql命令
             res = cur.fetchall()  # 获取执行的返回结果
             conn.commit()
             cur.close()
@@ -185,132 +187,31 @@ class DatabasesView(APIView):
         sprint = None
         if "sprint" in request.data:
             sprint = request.data["sprint"]
-        # 遍历sql语句
-        for result_i in result:
+        # 遍历数据库
+        for database_name_i in database_name:
             status = 1
             error_info = ""
-            # 遍历数据库
-            for database_name_i in database_name:
-                obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"],
-                                database_name_i)
-                # 执行sql操作
-                sql_info = obj.select(result_i)
-                if "error" in sql_info:
-                    status = 0
-                    error_info = str(sql_info["error"])
-                data = {
-                    "env": base_data["environment"],
-                    "db_name": database_name_i,
-                    "operate_sql": result_i,
-                    "performer": username,
-                    "status": status,
-                    "error_info": error_info,
-                    "sprint": sprint
-                }
-                # 将执行结果记录到日志
-                OperateLogsView().create(data)
-                if error_info:
-                    return Response(status=400, data={"error": "存在执行失败的sql，请去sql执行日志中查看！"})
+            obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"],
+                            database_name_i)
+            # 执行sql操作
+            sql_info = obj.select(result)
+            if "error" in sql_info:
+                status = 0
+                error_info = str(sql_info["error"])
+            data = {
+                "env": base_data["environment"],
+                "db_name": database_name_i,
+                "operate_sql": str(result),
+                "performer": username,
+                "status": status,
+                "error_info": error_info,
+                "sprint": sprint
+            }
+            # 将执行结果记录到日志
+            OperateLogsView().create(data)
             if error_info:
-                    break
+                return Response(status=400, data={"error": "存在执行失败的sql，请去sql执行日志中查看！"})
         return Response("恭喜你，全部sql执行成功！")
-        # request_data = []
-        # error_list = []
-        # if "data" not in request.data:
-        #     return Response(status=400, data={"error": "请求体数据格式错误！{'data': []或{}}"})
-        # if isinstance(request.data["data"], dict):
-        #     request_data.append(request.data["data"])
-        # elif isinstance(request.data["data"], list):
-        #     request_data += request.data["data"]
-        # else:
-        #     return Response(status=400, data={"error": "请求体数据格式错误！"})
-        # # 遍历请求数据
-        # for request_data_i in request_data:
-        #     # 执行sql，并记录到日志
-        #     if "db" not in request_data_i or "excute_db_name" not in request_data_i or "operate_sql" not in request_data_i:
-        #         return Response(status=400, data={"error": "请求体错误！"})
-        #     if not request_data_i["db"] or not request_data_i["excute_db_name"] or not request_data_i["operate_sql"]:
-        #         return Response(status=400, data={"error": "请求体不允许存在value为空的参数！"})
-        #     base_data = self.base(request_data_i["db"])
-        #     if "error" in base_data:
-        #         if "id" in request_data_i:
-        #             error_data = {
-        #                 "id": request_data_i["id"],
-        #                 "error": base_data["error"]
-        #             }
-        #         else:
-        #             error_data = {
-        #                 "error": base_data["error"]
-        #             }
-        #         error_list.append(error_data)
-        #         break
-        #     # conn = get_redis_connection('user_info')
-        #     if "user" in request_data_i:
-        #         username = request_data_i["user"]
-        #     else:
-        #         username = request.user.get_username()
-        #     if isinstance(request_data_i["excute_db_name"], list):
-        #         database_name = request_data_i["excute_db_name"]
-        #     else:
-        #         database_name = eval(request_data_i["excute_db_name"])
-        #     sql_data = request_data_i["operate_sql"]
-        #     pattern = re.compile(r'.*?;', re.DOTALL)
-        #     result = pattern.findall(sql_data)
-        #     if not result:
-        #         if "id" in request_data_i:
-        #             error_data = {
-        #                 "id": request_data_i["id"],
-        #                 "error": "sql缺少';'号！"
-        #             }
-        #         else:
-        #             error_data = {
-        #                 "error": "sql缺少';'号！"
-        #             }
-        #         error_list.append(error_data)
-        #         break
-        #         # return Response(status=400, data={"error": "sql缺少';'号！"})
-        #     # 遍历sql语句
-        #     for result_i in result:
-        #         status = 1
-        #         error_info = ""
-        #         # 遍历数据库
-        #         for database_name_i in database_name:
-        #             obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"],
-        #                             database_name_i)
-        #             # 执行sql操作
-        #             sql_info = obj.select(result_i)
-        #             if "error" in sql_info:
-        #                 status = 0
-        #                 error_info = str(sql_info["error"])
-        #             data = {
-        #                 "env": base_data["environment"],
-        #                 "db_name": database_name_i,
-        #                 "operate_sql": result_i,
-        #                 "performer": username,
-        #                 "status": status,
-        #                 "error_info": error_info
-        #             }
-        #             # 将执行结果记录到日志
-        #             OperateLogsView().create(data)
-        #             if error_info:
-        #                 if "id" in request_data_i:
-        #                     error_data = {
-        #                         "id": request_data_i["id"],
-        #                         "error": "存在执行失败的sql，请去sql执行日志中查看！"
-        #                     }
-        #                 else:
-        #                     error_data = {
-        #                         "error": "存在执行失败的sql，请去sql执行日志中查看！"
-        #                     }
-        #                 error_list.append(error_data)
-        #                 break
-        #                 # return Response("存在执行失败的sql，请去sql执行日志中查看！")
-        #         if error_info:
-        #                 break
-        # if error_list:
-        #     return Response(status=400, data={"error": error_list})
-        # else:
-        #     return Response("恭喜你，全部sql执行成功！")
 
 
 class MyFilterSet(FilterSet):
