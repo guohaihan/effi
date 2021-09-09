@@ -46,20 +46,22 @@ class MysqlList(object):
             )
         except Exception as e:
             return {"error": "连接数据库失败！失败原因：%s" % e}
+        cur = conn.cursor()  # 创建游标
         try:
-            cur = conn.cursor()  # 创建游标
             if isinstance(sql, str):
                 cur.execute(sql)  # 执行sql命令
             else:
-                cur.executemany(sql, None)  # 执行sql命令
+                for sql_i in sql:
+                    cur.execute(sql_i)
+        except Exception as e:
+            conn.rollback()
+            return {"error": "sql执行失败！失败原因：%s" % e}
+        else:
             res = cur.fetchall()  # 获取执行的返回结果
             conn.commit()
             cur.close()
             conn.close()
             return res
-        except Exception as e:
-            conn.rollback()
-            return {"error": "sql执行失败！失败原因：%s" % e}
 
     def get_all_db(self):
         """
@@ -210,7 +212,7 @@ class DatabasesView(APIView):
             # 将执行结果记录到日志
             OperateLogsView().create(data)
             if error_info:
-                return Response(status=400, data={"error": "存在执行失败的sql，请去sql执行日志中查看！"})
+                return Response(status=400, data={"error": error_info})
         return Response("恭喜你，全部sql执行成功！")
 
 
