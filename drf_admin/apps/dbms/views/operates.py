@@ -17,6 +17,7 @@ from drf_yasg import openapi
 from dbms.serializers.audits import AuditsSerializer
 from drf_admin.utils.views import AdminViewSet
 from rest_framework import status
+import json
 
 
 class MysqlList(object):
@@ -304,7 +305,7 @@ class AuditsViewSet(AdminViewSet):
 
     def create(self, request, *args, **kwargs):
         if "excute_db_name" in request.data:
-            request.data["excute_db_name"] = str(request.data["excute_db_name"])
+            request.data["excute_db_name"] = json.dumps(request.data["excute_db_name"])
         user = request.user.get_username()
         request.data["user"] = user
         serializer = self.get_serializer(data=request.data)
@@ -315,14 +316,14 @@ class AuditsViewSet(AdminViewSet):
 
     def multiple_update(self, request, *args, **kwargs):
         if "excute_db_name" in request.data:
-            request.data["excute_db_name"] = str(request.data["excute_db_name"])
+            request.data["excute_db_name"] = json.dumps(request.data["excute_db_name"])
         auditor = request.user.get_username()
         request.data["auditor"] = auditor
         return super().multiple_update(request, *args, **kwargs)
 
     def update(self, request, pk=None, *args, **kwargs):
         if "excute_db_name" in request.data:
-            request.data["excute_db_name"] = str(request.data["excute_db_name"])
+            request.data["excute_db_name"] = json.dumps(request.data["excute_db_name"])
         auditor = request.user.get_username()
         request.data["auditor"] = auditor
         kwargs['partial'] = True

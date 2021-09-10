@@ -8,6 +8,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from dbms.models import Audits
+import json
 
 
 class AuditsSerializer(serializers.ModelSerializer):
@@ -24,3 +25,9 @@ class AuditsSerializer(serializers.ModelSerializer):
 
     def get_db_name(self, obj):
         return obj.db.db_name
+
+    def to_representation(self, instance):
+        ret = super().to_representation(instance)
+        ret["excute_db_name"] = json.loads(instance.excute_db_name)
+        ret["operate_sql"] = instance.operate_sql.replace(";", ";\r\n")
+        return ret
