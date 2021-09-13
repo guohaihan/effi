@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from dbms.models import Sqlscripts, OperateLogs
+from drf_admin.utils.serializers import MyBaseSerializer
 
 
 class SqlscriptsSerializer(serializers.ModelSerializer):
@@ -37,7 +38,7 @@ class SqlscriptsSerializer(serializers.ModelSerializer):
         return instance
 
 
-class OperateLogsSerializer(serializers.ModelSerializer):
+class OperateLogsSerializer(MyBaseSerializer):
     class Meta:
         model = OperateLogs
         fields = "__all__"
@@ -46,7 +47,6 @@ class OperateLogsSerializer(serializers.ModelSerializer):
     db_name = serializers.CharField(max_length=50)
     operate_sql = serializers.CharField()
     performer = serializers.CharField(max_length=20)
-    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     status = serializers.IntegerField()
     error_info = serializers.CharField(max_length=255, allow_blank=True)
     sprint = serializers.CharField(max_length=50, default=None, allow_blank=True, allow_null=True)

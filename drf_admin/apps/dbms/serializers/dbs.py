@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from dbms.models import Sqlscripts, DBServerConfig
+from dbms.models import DBServerConfig
 
 
 class DBServerConfigSerializer(serializers.ModelSerializer):

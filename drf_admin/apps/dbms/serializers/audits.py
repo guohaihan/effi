@@ -6,18 +6,15 @@
 @create   : 2021/8/26 16:11
 """
 from rest_framework import serializers
-from rest_framework.exceptions import ValidationError
 from dbms.models import Audits
 import json
+from drf_admin.utils.serializers import MyBaseSerializer
 
 
-class AuditsSerializer(serializers.ModelSerializer):
+class AuditsSerializer(MyBaseSerializer):
     # 添加额外字段
     db_env = serializers.SerializerMethodField(label="执行环境")
     db_name = serializers.SerializerMethodField(label="数据库名称")
-
-    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
-    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
 
     class Meta:
         model = Audits
