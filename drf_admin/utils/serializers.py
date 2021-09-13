@@ -10,9 +10,5 @@ from drf_admin.utils.models import BaseModel
 
 
 class MyBaseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = BaseModel
-        fieids = "__all__"
-
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
