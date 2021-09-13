@@ -6,7 +6,6 @@
 @create   : 2021/9/13 23:23
 """
 from rest_framework import serializers
-from drf_admin.utils.models import BaseModel
 
 
 class MyBaseSerializer(serializers.ModelSerializer):
