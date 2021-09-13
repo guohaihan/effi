@@ -16,6 +16,9 @@ class AuditsSerializer(serializers.ModelSerializer):
     db_env = serializers.SerializerMethodField(label="执行环境")
     db_name = serializers.SerializerMethodField(label="数据库名称")
 
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+    update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
+
     class Meta:
         model = Audits
         fields = "__all__"
@@ -29,5 +32,4 @@ class AuditsSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         ret["excute_db_name"] = json.loads(instance.excute_db_name)
-        ret["operate_sql"] = instance.operate_sql.replace(";", ";\r\n")
         return ret

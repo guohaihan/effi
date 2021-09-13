@@ -46,7 +46,7 @@ class OperateLogsSerializer(serializers.ModelSerializer):
     db_name = serializers.CharField(max_length=50)
     operate_sql = serializers.CharField()
     performer = serializers.CharField(max_length=20)
-    create_time = serializers.DateTimeField(read_only=True)
+    create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     status = serializers.IntegerField()
     error_info = serializers.CharField(max_length=255, allow_blank=True)
     sprint = serializers.CharField(max_length=50, default=None, allow_blank=True, allow_null=True)

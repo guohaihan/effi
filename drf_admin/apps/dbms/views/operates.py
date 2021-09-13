@@ -29,7 +29,7 @@ class MysqlList(object):
         self.port = port
         self.db_name = db_name
 
-    def select(self, sql):
+    def execute_sql(self, sql):
         """
         执行sql命令
         :param sql: sql语句
@@ -72,7 +72,7 @@ class MysqlList(object):
         # 排除自带的数据库
         exclude_list = ["sys", "information_schema", "mysql", "performance_schema"]
         sql = "show databases"  # 显示所有数据库
-        res = self.select(sql)
+        res = self.execute_sql(sql)
         if "error" in res:  # 判断结果非空
             return res
 
@@ -197,7 +197,7 @@ class DatabasesView(APIView):
             obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"],
                             database_name_i)
             # 执行sql操作
-            sql_info = obj.select(result)
+            sql_info = obj.execute_sql(result)
             if "error" in sql_info:
                 status = 0
                 error_info = str(sql_info["error"])
