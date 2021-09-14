@@ -204,7 +204,7 @@ class DatabasesView(APIView):
             data = {
                 "env": base_data["environment"],
                 "db_name": database_name_i,
-                "operate_sql": str(result),
+                "operate_sql": sql_data,
                 "performer": username,
                 "status": status,
                 "error_info": error_info,

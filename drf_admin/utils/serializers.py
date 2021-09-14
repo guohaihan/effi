@@ -9,5 +9,8 @@ from rest_framework import serializers
 
 
 class MyBaseSerializer(serializers.ModelSerializer):
+    """
+    格式化时间的返回格式
+    """
     create_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
     update_time = serializers.DateTimeField(format='%Y-%m-%d %H:%M:%S', read_only=True)
