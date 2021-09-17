@@ -151,6 +151,13 @@ class DatabasesView(APIView):
         all_db_list = obj.get_all_db()
         if "error" in all_db_list:
             return Response(status=400, data={"error": all_db_list["error"]})
+        if request.query_params:
+            if "tenant" not in request.query_params:
+                return Response(status=400, data={"error": "请求参数为tenant"})
+            for all_db_i in all_db_list[:]:
+                if not all_db_i["Database"].startswith("guozhi_tenant_") or all_db_i["Database"]=="guozhi_tenant_1":
+                    print(type(all_db_i), all_db_i)
+                    all_db_list.remove(all_db_i)
         return Response(all_db_list)
 
     @swagger_auto_schema(responses={200: openapi.Schema(
