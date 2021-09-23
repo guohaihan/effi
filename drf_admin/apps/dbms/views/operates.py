@@ -18,6 +18,7 @@ from dbms.serializers.audits import AuditsSerializer
 from drf_admin.utils.views import AdminViewSet
 from rest_framework import status
 import json
+from celery_tasks.dingding.tasks import send_dingding_msg
 
 
 class MysqlList(object):
@@ -319,6 +320,7 @@ class AuditsViewSet(AdminViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
+        send_dingding_msg.delay("你有新的待审核的sql！")
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def multiple_update(self, request, *args, **kwargs):
