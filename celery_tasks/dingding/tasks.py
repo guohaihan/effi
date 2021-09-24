@@ -7,10 +7,7 @@
 """
 from celery_tasks.main import app
 import requests, json, time
-from celery.utils.log import get_task_logger
-
-
-logger = get_task_logger(__name__)
+import logging
 
 
 # 向钉钉群输出信息
@@ -24,6 +21,6 @@ def send_dingding_msg(text):
     }
     try:
         response = requests.post(url=webhook, data=json.dumps(data), headers=headers)
-        logger.info("钉钉消息发送成功：%s" % data["text"]["content"])
+        logging.getLogger("info").info("钉钉消息发送成功：%s" % data["text"]["content"])
     except Exception as e:
-        logger.error("钉钉消息发送失败：%s，失败原因:%s" % (data["text"]["content"], e))
+        logging.getLogger("error").error("钉钉消息发送失败：%s，失败原因:%s" % (data["text"]["content"], e))

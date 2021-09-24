@@ -49,21 +49,48 @@ class MysqlList(object):
         except Exception as e:
             return {"error": "连接数据库失败！失败原因：%s" % e}
         cur = conn.cursor()  # 创建游标
-        try:
-            if isinstance(sql, str):
-                cur.execute(sql)  # 执行sql命令
+        info = []
+        if isinstance(sql, str):
+            sql = sql.replace("\n", "")
+            try:
+                row_count = cur.execute(sql)  # 执行sql命令
+                if sql.lower().startswith("alter") or sql.lower().startswith("update"):
+                    info.append({"sql": sql, "message": "OK，影响行数：%d" % row_count})
+                elif sql.lower().startswith("select") or sql.lower().startswith("show"):
+                    res = cur.fetchall()  # 获取执行的返回结果
+                    info.append({"sql": sql, "message": "OK，影响行数：%d" % row_count, "data": res})
+                else:
+                    info.append({"sql": sql, "message": "OK"})
+            except Exception as e:
+                conn.rollback()
+                info.append({"sql": sql, "message": "FAIL，失败原因：{}".format(e)})
+                return info
             else:
-                for sql_i in sql:
-                    cur.execute(sql_i)
-        except Exception as e:
-            conn.rollback()
-            return {"error": "sql执行失败！失败原因：%s" % e}
+                conn.commit()
+                cur.close()
+                conn.close()
+                return info
         else:
-            res = cur.fetchall()  # 获取执行的返回结果
-            conn.commit()
-            cur.close()
-            conn.close()
-            return res
+            for sql_i in sql:
+                sql_i = sql_i.replace("\n", "")
+                try:
+                    row_count = cur.execute(sql_i)
+                    if sql_i.lower().startswith("alter") or sql_i.lower().startswith("update"):
+                        info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count})
+                    elif sql_i.lower().startswith("select") or sql_i.lower().startswith("show"):
+                        res = cur.fetchall()  # 获取执行的返回结果
+                        info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count, "data": res})
+                    else:
+                        info.append({"sql": sql_i, "message": "OK"})
+                except Exception as e:
+                    conn.rollback()
+                    info.append({"sql": sql_i, "message": "FAIL，失败原因：{}".format(e)})
+                    return info
+            else:
+                conn.commit()
+                cur.close()
+                conn.close()
+                return info
 
     def get_all_db(self):
         """
@@ -74,11 +101,14 @@ class MysqlList(object):
         exclude_list = ["sys", "information_schema", "mysql", "performance_schema"]
         sql = "show databases"  # 显示所有数据库
         res = self.execute_sql(sql)
-        if "error" in res:  # 判断结果非空
+        # if "error" in res:  # 判断结果非空
+        #     return res
+        if "FAIL" in res[-1]["message"]:
             return res
 
         if not res:
             return {"error": "数据库为空！"}
+        res = res[-1]["data"]
         for i in res:
             db_name = i['Database']
             # 判断不在排除列表时
@@ -157,7 +187,6 @@ class DatabasesView(APIView):
                 return Response(status=400, data={"error": "请求参数为tenant"})
             for all_db_i in all_db_list[:]:
                 if not all_db_i["Database"].startswith("guozhi_tenant_") or all_db_i["Database"]=="guozhi_tenant_1":
-                    print(type(all_db_i), all_db_i)
                     all_db_list.remove(all_db_i)
         return Response(all_db_list)
 
@@ -191,6 +220,8 @@ class DatabasesView(APIView):
         else:
             database_name = eval(request.data["excute_db_name"])
         sql_data = request.data["operate_sql"]
+        if "select" in sql_data and len(database_name) > 1:
+            return Response(status=400, data={"error": "不能同时查询多个数据库！"})
         pattern = re.compile(r'.*?;', re.DOTALL)
         result = pattern.findall(sql_data)
         if not result:
@@ -206,9 +237,13 @@ class DatabasesView(APIView):
                             database_name_i)
             # 执行sql操作
             sql_info = obj.execute_sql(result)
-            if "error" in sql_info:
+            if "FAIL" in sql_info[-1]["message"]:
                 status = 0
-                error_info = str(sql_info["error"])
+                error_info = "失败sql：" + sql_info[-1]["sql"] + "\n" + sql_info[-1]["message"]
+                # error_info = sql_info[-1]["message"]
+            # if "error" in sql_info:
+            #     status = 0
+            #     error_info = str(sql_info["error"])
             data = {
                 "env": base_data["environment"],
                 "db_name": database_name_i,
@@ -221,8 +256,9 @@ class DatabasesView(APIView):
             # 将执行结果记录到日志
             OperateLogsView().create(data)
             if error_info:
-                return Response(status=400, data={"error": error_info})
-        return Response("恭喜你，全部sql执行成功！")
+                return Response(status=400, data={"error": sql_info})
+        # return Response("恭喜你，全部sql执行成功！")
+        return Response(data=sql_info)
 
 
 class MyFilterSet(FilterSet):
