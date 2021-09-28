@@ -19,6 +19,10 @@ from drf_admin.utils.views import AdminViewSet
 from rest_framework import status
 import json
 from celery_tasks.dingding.tasks import send_dingding_msg
+from django.views.decorators.http import require_POST
+from django.http import HttpResponse
+from openpyxl import Workbook
+import os
 
 
 class MysqlList(object):
@@ -378,3 +382,33 @@ class AuditsViewSet(AdminViewSet):
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(serializer.data)
+
+
+# 导出查询数据
+@require_POST
+def export_excel(request):
+    """
+    请求url：/dbms/operates/excel/
+    请求params：?file_url=
+    请求体：{"data": 数据库执行接口返回的data或errors中的内容}
+    """
+    file_url = request.GET.get("file_url")
+    file_data = json.loads(request.body).get("data")
+    if not isinstance(file_data, list):
+        return HttpResponse("文件数据格式为[{'data': [{}, {}]},]!")
+    wb = Workbook()
+    for file_data_i in file_data:
+        if "data" in file_data_i:
+            table_name = re.match(r'.* from (.*?)[\s|;]', file_data_i["sql"], re.I).group(1)
+            ws = wb.create_sheet(table_name)
+            for data_i in range(len(file_data_i["data"][0].keys())):
+                ws.cell(row=1, column=data_i+1, value=list(file_data_i["data"][0].keys())[data_i])
+            for data_i in range(len(file_data_i["data"])):
+                for data_i_i in range(len(file_data_i["data"][data_i].values())):
+                    ws.cell(row=data_i+2, column=data_i_i+1, value=list(file_data_i["data"][data_i].values())[data_i_i])
+    del wb["Sheet"]
+    if not file_url:
+        # 如果没有给路径，直接导出到页面
+        file_url = os.path.join(os.path.expanduser("~"), "Desktop")
+    wb.save("%s/result.xlsx" % file_url)
+    return HttpResponse("OK")

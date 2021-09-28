@@ -9,6 +9,7 @@ urlpatterns += [
     # path("sqlscript/sql_script/", sqlscript.SqlscriptGenericView.as_view()),
     # path("sqlscript/sql_script/<pk>/", sqlscript.SqlscriptGenericAPIView.as_view()),
     # path("sqlscript/sql_operate/<pk>/", sqlscript.SqlscriptOperateGenericView.as_view()),
+    path("operates/excel/", operates.export_excel),
     path("operates/databases/", operates.DatabasesView.as_view()),
     path("operates/databases/<pk>/", operates.DatabasesView.as_view()),
     path("operates/logs/", operates.OperateLogsView.as_view()),
