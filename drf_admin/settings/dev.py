@@ -66,6 +66,7 @@ INSTALLED_APPS = [
     'cmdb',
     'information',
     'dbms',
+    'tools',
 ]
 
 MIDDLEWARE = [
@@ -168,6 +169,14 @@ CACHES = {
     'online_user': {
         'BACKEND': 'django_redis.cache.RedisCache',
         'LOCATION': f'redis://{REDIS_STR}{REDIS_HOST}:{REDIS_PORT}/3',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        }
+    },
+    # 脱敏设置
+    'desensitises_config': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': f'redis://{REDIS_STR}{REDIS_HOST}:{REDIS_PORT}/4',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
         }

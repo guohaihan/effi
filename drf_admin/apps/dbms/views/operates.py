@@ -1,3 +1,4 @@
+from django.views.decorators.csrf import csrf_exempt
 from dbms.models import OperateLogs, DBServerConfig, Audits
 from rest_framework.response import Response
 from django_filters.rest_framework.filterset import FilterSet
@@ -23,6 +24,7 @@ from django.views.decorators.http import require_POST
 from django.http import HttpResponse
 from openpyxl import Workbook
 import os
+from django_redis import get_redis_connection
 
 
 class MysqlList(object):
@@ -34,7 +36,74 @@ class MysqlList(object):
         self.port = port
         self.db_name = db_name
 
-    def execute_sql(self, sql):
+    # 进行数据脱敏
+    def desen(self, sql):
+        """
+        1，从redis中获取设置内容，不存在时，使用默认值；
+        2，判断第一个select后是否有*，有则通过正则拿字段（区分有无as），无则通过sql获取字段；
+        3，进行脱敏字段比对；
+        4，确认sql最后是否有limit，无则使用默认值；
+        """
+        redis_conn = get_redis_connection('desensitises_config')  # 连接redis，获取脱敏配置
+        desensitises = redis_conn.smembers("desensitises")
+        limit = redis_conn.get("limit")
+        desensitises_l = []
+        if desensitises:
+            for d_i in desensitises:
+                desensitises_l.append(d_i.decode("utf-8"))
+        if not limit:
+            limit = 10
+        else:
+            limit = int(limit.decode("utf-8"))
+        if isinstance(sql, str):
+            sql = [sql]  # 如果只有一条sql，将sql放入列表
+        for i in range(len(sql)):
+            sql[i] = sql[i].lower().replace("\n", " ").strip()
+            if sql[i].startswith("select"):
+                # 查询语句没有*时
+                result = re.search(r'select (.*?) from', sql[i], re.DOTALL | re.I)
+                if not result:
+                    return {"sql": sql[i], "message": "FAIL，失败原因：缺少字段名；"}
+                col_name = result.group(1).split(",")
+                for col_i in range(len(col_name)):
+                    # 字段重命名时，是否有as
+                    if " as " in col_name[col_i]:
+                        col_name[col_i] = col_name[col_i].strip()
+                        v_i = re.search(r'(.*?)\sas', col_name[col_i], re.DOTALL | re.I)
+                        col_name[col_i] = v_i.group(1)
+                        if col_name[col_i] in desensitises_l:
+                            sql[i] = re.sub(r'\s%s\s' % col_name[col_i], '@%s:="*"' % col_name[col_i], sql[i], 1)
+                        elif col_name[col_i].find(".") > 0:
+                            col_name_index = col_name[col_i].find(".")
+                            if col_name[col_i][col_name_index+1:] in desensitises_l:
+                                sql[i] = re.sub(r'%s as ' % col_name[col_i], '@%s:="*" as ' % col_name[col_i].strip(), sql[i], 1)
+                    # 字段重命名时，无as
+                    elif re.search(r'\w+\s\w+', col_name[col_i], re.DOTALL | re.I):
+                        col_name[col_i] = col_name[col_i].strip()
+                        v_i = re.search(r'(.*?)\s\w', col_name[col_i], re.DOTALL | re.I)
+                        col_name[col_i] = v_i.group(1)
+                        if col_name[col_i] in desensitises_l:
+                            sql[i] = re.sub(r'\s%s\s' % col_name[col_i], '@%s:="*"' % col_name[col_i], sql[i], 1)
+                        elif col_name[col_i].find(".") > 0:
+                            col_name_index = col_name[col_i].find(".")
+                            if col_name[col_i][col_name_index+1:] in desensitises_l:
+                                sql[i] = re.sub(r'%s' % col_name[col_i], '@%s:="*"' % col_name[col_i].strip(), sql[i], 1)
+                    else:
+                        col_name[col_i] = col_name[col_i].strip()
+                        if col_name[col_i] in desensitises_l:
+                            sql[i] = re.sub(r"%s" % col_name[col_i], "@%s:='*' as %s" % (col_name[col_i], col_name[col_i]), sql[i], 1)
+                        elif col_name[col_i].find(".") > 0:
+                            col_name_index = col_name[col_i].find(".")
+                            if col_name[col_i][col_name_index+1:] in desensitises_l:
+                                sql[i] = re.sub(r'%s' % col_name[col_i], '@%s:="*" as %s' % (col_name[col_i], col_name[col_i][col_name_index+1:]), sql[i], 1)
+                # 判断有无limit，不存在时，添加limit
+                result = re.search(r'.* limit [0-9]+;', sql[i], re.DOTALL|re.I)
+                if not result:
+                    sql[i] = sql[i].replace(";", " limit %d;" % limit)
+        data = self.execute_sql(sql)  # 进行sql执行
+        return data
+
+    def execute_sql(self, sql, db_env=True):
         """
         执行sql命令
         :param sql: sql语句
@@ -52,15 +121,30 @@ class MysqlList(object):
             )
         except Exception as e:
             return {"error": "连接数据库失败！失败原因：%s" % e}
+        redis_conn = get_redis_connection('desensitises_config')  # 连接redis，获取脱敏配置
+        desensitises = redis_conn.smembers("desensitises")
+        desensitises_l = []
+        if desensitises:
+            for d_i in desensitises:
+                desensitises_l.append(d_i.decode("utf-8"))
+
         cur = conn.cursor()  # 创建游标
         info = []
         if isinstance(sql, str):
-            sql = sql.replace("\n", "")
+            sql = sql.lower().replace("\n", " ").strip()
             try:
                 row_count = cur.execute(sql)  # 执行sql命令
-                if sql.lower().startswith("alter") or sql.lower().startswith("update"):
+                if sql.startswith("alter") or sql.startswith("update"):
                     info.append({"sql": sql, "message": "OK，影响行数：%d" % row_count})
-                elif sql.lower().startswith("select") or sql.lower().startswith("show"):
+                elif sql.startswith("select"):
+                    res = cur.fetchall()  # 获取执行的返回结果
+                    if res and not db_env:
+                        for key_i in list(res[0].keys()):
+                            if key_i in desensitises_l:
+                                for res_i in res:
+                                    res_i[key_i] = "*"
+                    info.append({"sql": sql, "message": "OK，影响行数：%d" % row_count, "data": res})
+                elif sql.startswith("show"):
                     res = cur.fetchall()  # 获取执行的返回结果
                     info.append({"sql": sql, "message": "OK，影响行数：%d" % row_count, "data": res})
                 else:
@@ -76,12 +160,20 @@ class MysqlList(object):
                 return info
         else:
             for sql_i in sql:
-                sql_i = sql_i.replace("\n", "")
+                sql_i = sql_i.lower().replace("\n", " ").strip()
                 try:
                     row_count = cur.execute(sql_i)
-                    if sql_i.lower().startswith("alter") or sql_i.lower().startswith("update"):
+                    if sql_i.startswith("alter") or sql_i.startswith("update"):
                         info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count})
-                    elif sql_i.lower().startswith("select") or sql_i.lower().startswith("show"):
+                    elif sql_i.startswith("select"):
+                        res = cur.fetchall()  # 获取执行的返回结果
+                        if res and not db_env:
+                            for key_i in list(res[0].keys()):
+                                if key_i in desensitises_l:
+                                    for res_i in res:
+                                        res_i[key_i] = "*"
+                        info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count, "data": res})
+                    elif sql_i.startswith("show"):
                         res = cur.fetchall()  # 获取执行的返回结果
                         info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count, "data": res})
                     else:
@@ -105,8 +197,6 @@ class MysqlList(object):
         exclude_list = ["sys", "information_schema", "mysql", "performance_schema"]
         sql = "show databases"  # 显示所有数据库
         res = self.execute_sql(sql)
-        # if "error" in res:  # 判断结果非空
-        #     return res
         if "FAIL" in res[-1]["message"]:
             return res
 
@@ -187,6 +277,7 @@ class DatabasesView(APIView):
         if "error" in all_db_list:
             return Response(status=400, data={"error": all_db_list["error"]})
         if request.query_params:
+            # tenant用来过滤租户库
             if "tenant" not in request.query_params:
                 return Response(status=400, data={"error": "请求参数为tenant"})
             for all_db_i in all_db_list[:]:
@@ -215,6 +306,7 @@ class DatabasesView(APIView):
         if "error" in base_data:
             return Response(status=400, data={"error": base_data["error"]})
         # conn = get_redis_connection('user_info')
+        db_env = DBServerConfig.objects.filter(id=request.data["db"]).values()[0]["db_env"]  # 获取当前数据库的环境类型
         if "user" in request.data:
             username = request.data["user"]
         else:
@@ -224,7 +316,7 @@ class DatabasesView(APIView):
         else:
             database_name = eval(request.data["excute_db_name"])
         sql_data = request.data["operate_sql"]
-        if "select" in sql_data and len(database_name) > 1:
+        if ("select" in sql_data or "show" in sql_data) and len(database_name) > 1:
             return Response(status=400, data={"error": "不能同时查询多个数据库！"})
         pattern = re.compile(r'.*?;', re.DOTALL)
         result = pattern.findall(sql_data)
@@ -240,14 +332,13 @@ class DatabasesView(APIView):
             obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"],
                             database_name_i)
             # 执行sql操作
-            sql_info = obj.execute_sql(result)
+            if not db_env:
+                sql_info = obj.execute_sql(result, db_env=db_env)
+            else:
+                sql_info = obj.desen(result)
             if "FAIL" in sql_info[-1]["message"]:
                 status = 0
                 error_info = "失败sql：" + sql_info[-1]["sql"] + "\n" + sql_info[-1]["message"]
-                # error_info = sql_info[-1]["message"]
-            # if "error" in sql_info:
-            #     status = 0
-            #     error_info = str(sql_info["error"])
             data = {
                 "env": base_data["environment"],
                 "db_name": database_name_i,
@@ -386,6 +477,18 @@ class AuditsViewSet(AdminViewSet):
 
 # 导出查询数据
 @require_POST
+@csrf_exempt
+@swagger_auto_schema(responses={200: openapi.Schema(
+    type=openapi.TYPE_OBJECT,
+    title="请求体",
+    properties={
+        "data": openapi.Schema(
+            title="此请求体用审核通过后的响应data，格式为{'data': data}",
+            type=openapi.TYPE_STRING,
+        ),
+    },
+    required=["请求体"]
+)})
 def export_excel(request):
     """
     请求url：/dbms/operates/excel/
@@ -398,7 +501,7 @@ def export_excel(request):
         return HttpResponse("文件数据格式为[{'data': [{}, {}]},]!")
     wb = Workbook()
     for file_data_i in file_data:
-        if "data" in file_data_i:
+        if "data" in file_data_i and file_data_i["sql"].lower().startswith("select"):
             table_name = re.match(r'.* from (.*?)[\s|;]', file_data_i["sql"], re.I).group(1)
             ws = wb.create_sheet(table_name)
             for data_i in range(len(file_data_i["data"][0].keys())):
@@ -406,7 +509,8 @@ def export_excel(request):
             for data_i in range(len(file_data_i["data"])):
                 for data_i_i in range(len(file_data_i["data"][data_i].values())):
                     ws.cell(row=data_i+2, column=data_i_i+1, value=list(file_data_i["data"][data_i].values())[data_i_i])
-    del wb["Sheet"]
+    if len(wb.sheetnames) > 1:
+        del wb["Sheet"]
     if not file_url:
         # 如果没有给路径，直接导出到页面
         file_url = os.path.join(os.path.expanduser("~"), "Desktop")

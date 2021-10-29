@@ -1,0 +1,46 @@
+# -*- coding: utf-8 -*-
+"""
+@author   : Guo Hai Han
+@software : PyCharm
+@file     : jiras.py
+@create   : 2021/10/8 16:35
+"""
+from jira import JIRA
+from django.http import JsonResponse, HttpResponse
+import re
+
+
+def counts(request):
+    if request.method != "GET":
+        return HttpResponse("只接受GET请求！", status=405)
+    sprint = request.GET.get("sprint")
+    if not sprint:
+        return HttpResponse("sprint必填，格式?sprint=", status=400)
+    server = "http://project.guoguokeji.com"
+    try:
+        jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
+    except Exception as e:
+        return HttpResponse("失败原因：%s" % e, status=400)
+    jql = """project = GZ AND issuetype in (功能优化, 功能错误, 界面优化) AND status in (Open, "In Progress", Reopened, Resolved, 已关闭) AND fixVersion = "%s" ORDER BY assignee ASC, key DESC, summary ASC, created DESC""" % sprint
+    try:
+        issue_list = jira_client.search_issues(jql, maxResults=False)
+    except Exception as e:
+        return HttpResponse(e.text, status=400)
+    assignee_list = []
+    issuetype_list = []
+    summary_list = []
+    my_dict = {"assignee": assignee_list, "issuetype": issuetype_list, "summary": summary_list}
+    for issue_i in issue_list:
+        field = jira_client.issue(issue_i.key).fields
+        assignee_list.append(str(field.assignee))  # assignee经办人
+        issuetype_list.append(str(field.issuetype))  # issuetype问题类型
+        pattern = re.compile(r'gz-(\d+)', re.I)
+        result = pattern.findall(str(field.summary))  # summary概要
+        summary_list.append(result[0])
+    for key in my_dict.keys():
+        count = {}
+        for li in my_dict[key]:
+            count.setdefault(li, 0)
+            count[li] += 1
+        my_dict[key] = count
+    return JsonResponse(my_dict)

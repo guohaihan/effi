@@ -1,0 +1,3 @@
+delete FROM uums_notice WHERE type=3;
+dlete FROM uums_notice_user where module_type=3;
+select * from uums_notice;
