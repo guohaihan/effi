@@ -8,10 +8,28 @@
 from django.http import HttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django_redis import get_redis_connection
+from rest_framework.decorators import api_view
 
 
 @csrf_exempt
+@api_view(["GET", "POST", "DELETE"])
 def config(request):
+    """
+    get:
+    获取脱敏数据
+
+    return：配置数据
+    post:
+    设置脱敏数据
+
+    请求体：{"desensitises": [], "limit": 1000}
+    return：设置成功
+    delete:
+    删除配置数据
+
+    请求params：?desensitises=，不传params时，做清空操作
+    return：删除成功
+    """
     conn = get_redis_connection('desensitises_config')
     if request.method == "GET":
         data = {"desensitises": [], "limit": 1000}  # 未设置时，默认为1000

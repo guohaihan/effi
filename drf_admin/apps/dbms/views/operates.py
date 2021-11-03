@@ -1,4 +1,5 @@
 from django.views.decorators.csrf import csrf_exempt
+from rest_framework.decorators import api_view
 from dbms.models import OperateLogs, DBServerConfig, Audits
 from rest_framework.response import Response
 from django_filters.rest_framework.filterset import FilterSet
@@ -451,21 +452,13 @@ class AuditsViewSet(AdminViewSet):
 # 导出查询数据
 @require_POST
 @csrf_exempt
-@swagger_auto_schema(responses={200: openapi.Schema(
-    type=openapi.TYPE_OBJECT,
-    title="请求体",
-    properties={
-        "data": openapi.Schema(
-            title="此请求体用审核通过后的响应data，格式为{'data': data}",
-            type=openapi.TYPE_STRING,
-        ),
-    },
-    required=["请求体"]
-)})
+@api_view(["POST"])
 def export_excel(request):
     """
-    请求url：/dbms/operates/excel/
-    请求params：?file_url=
+    post:
+    导出查询数据；
+
+    请求params：?file_url= ，不传时，导出到桌面
     请求体：{"data": 数据库执行接口返回的data或errors中的内容}
     """
     file_url = request.GET.get("file_url")

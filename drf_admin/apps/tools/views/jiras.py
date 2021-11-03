@@ -8,9 +8,24 @@
 from jira import JIRA
 from django.http import JsonResponse, HttpResponse
 import re
+from rest_framework.decorators import api_view
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
+@swagger_auto_schema(method='get',
+                     operation_summary='获取jira统计数',
+                     manual_parameters=[openapi.Parameter('sprint', openapi.IN_QUERY, type=openapi.TYPE_STRING, description="版本号")],
+                     responses={200: '统计数量'})
+@api_view(["GET"])
 def counts(request):
+    """
+    get:
+    获取jira统计数
+
+    请求params：?sprint= ，sprint（代表版本号）
+    return:统计数
+    """
     if request.method != "GET":
         return HttpResponse("只接受GET请求！", status=405)
     sprint = request.GET.get("sprint")
