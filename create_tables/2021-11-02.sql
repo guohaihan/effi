@@ -1,0 +1,1 @@
+alter table dbms_operate_logs modify column error_info longtext NOT NULL COMMENT '执行信息';

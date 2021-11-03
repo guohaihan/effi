@@ -52,7 +52,7 @@ class MysqlList(object):
             for d_i in desensitises:
                 desensitises_l.append(d_i.decode("utf-8"))
         if not limit:
-            limit = 10
+            limit = 1000
         else:
             limit = int(limit.decode("utf-8"))
         if isinstance(sql, str):
@@ -131,57 +131,30 @@ class MysqlList(object):
         cur = conn.cursor()  # 创建游标
         info = []
         if isinstance(sql, str):
-            sql = sql.lower().replace("\n", " ").strip()
+            sql = [sql]  # 如果只有一条sql，将sql放入列表
+        for sql_i in sql:
+            sql_i = sql_i.lower().replace("\n", " ").strip()
             try:
-                row_count = cur.execute(sql)  # 执行sql命令
-                if sql.startswith("alter") or sql.startswith("update"):
-                    info.append({"sql": sql, "message": "OK，影响行数：%d" % row_count})
-                elif sql.startswith("select"):
+                row_count = cur.execute(sql_i)
+                if sql_i.startswith("alter") or sql_i.startswith("update"):
+                    info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count})
+                elif sql_i.startswith("select"):
                     res = cur.fetchall()  # 获取执行的返回结果
                     if res and not db_env:
                         for key_i in list(res[0].keys()):
                             if key_i in desensitises_l:
                                 for res_i in res:
                                     res_i[key_i] = "*"
-                    info.append({"sql": sql, "message": "OK，影响行数：%d" % row_count, "data": res})
-                elif sql.startswith("show"):
+                    info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count, "data": res})
+                elif sql_i.startswith("show"):
                     res = cur.fetchall()  # 获取执行的返回结果
-                    info.append({"sql": sql, "message": "OK，影响行数：%d" % row_count, "data": res})
+                    info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count, "data": res})
                 else:
-                    info.append({"sql": sql, "message": "OK"})
+                    info.append({"sql": sql_i, "message": "OK"})
             except Exception as e:
                 conn.rollback()
-                info.append({"sql": sql, "message": "FAIL，失败原因：{}".format(e)})
+                info.append({"sql": sql_i, "message": "FAIL，失败原因：{}".format(e)})
                 return info
-            else:
-                conn.commit()
-                cur.close()
-                conn.close()
-                return info
-        else:
-            for sql_i in sql:
-                sql_i = sql_i.lower().replace("\n", " ").strip()
-                try:
-                    row_count = cur.execute(sql_i)
-                    if sql_i.startswith("alter") or sql_i.startswith("update"):
-                        info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count})
-                    elif sql_i.startswith("select"):
-                        res = cur.fetchall()  # 获取执行的返回结果
-                        if res and not db_env:
-                            for key_i in list(res[0].keys()):
-                                if key_i in desensitises_l:
-                                    for res_i in res:
-                                        res_i[key_i] = "*"
-                        info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count, "data": res})
-                    elif sql_i.startswith("show"):
-                        res = cur.fetchall()  # 获取执行的返回结果
-                        info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count, "data": res})
-                    else:
-                        info.append({"sql": sql_i, "message": "OK"})
-                except Exception as e:
-                    conn.rollback()
-                    info.append({"sql": sql_i, "message": "FAIL，失败原因：{}".format(e)})
-                    return info
             else:
                 conn.commit()
                 cur.close()
