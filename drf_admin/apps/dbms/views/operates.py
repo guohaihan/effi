@@ -156,11 +156,10 @@ class MysqlList(object):
                 conn.rollback()
                 info.append({"sql": sql_i, "message": "FAIL，失败原因：{}".format(e)})
                 return info
-            else:
-                conn.commit()
-                cur.close()
-                conn.close()
-                return info
+        conn.commit()
+        cur.close()
+        conn.close()
+        return info
 
     def get_all_db(self):
         """
@@ -449,7 +448,20 @@ class AuditsViewSet(AdminViewSet):
         return Response(serializer.data)
 
 
+re_params = openapi.Parameter('file_url', openapi.IN_QUERY, description="请求参数：导出路径，非必填，默认桌面", type=openapi.TYPE_STRING)
 # 导出查询数据
+@swagger_auto_schema(
+    method='post',
+    operation_summary='导出查询数据',
+    manual_parameters=[re_params],
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            "data": openapi.Schema(title="此请求体用查询的响应data，格式为{'data': data}", type=openapi.TYPE_STRING),
+        }
+    ),
+    responses={200: "ok"}
+)
 @require_POST
 @csrf_exempt
 @api_view(["POST"])
