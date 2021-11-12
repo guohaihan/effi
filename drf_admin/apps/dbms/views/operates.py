@@ -457,14 +457,7 @@ class AuditsViewSet(AdminViewSet):
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
         access_token = "241dc3a7aaf7c97ca10aa122f6e5568b1b0c6c3a4dbcc6454b08a64f0ca9d0c7"
-        # send_dingding_msg.delay(access_token, "text", "你有新的待审核的sql！")
-        send_dingding_msg.delay(access_token, "actionCard", {
-                "title": "乔布斯 20 年前想打造一间苹果咖啡厅，而它正是 Apple Store 的前身",
-                "text": "![screenshot](https://gw.alicdn.com/tfs/TB1ut3xxbsrBKNjSZFpXXcXhFXa-846-786.png)",
-                "btnOrientation": "0",
-                "singleTitle": "阅读全文",
-                "singleURL": "https://www.dingtalk.com/"
-    })
+        send_dingding_msg.delay(access_token, "text", "你有新的待审核的sql！")
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def multiple_update(self, request, *args, **kwargs):
