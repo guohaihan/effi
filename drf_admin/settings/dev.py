@@ -66,7 +66,7 @@ INSTALLED_APPS = [
     'cmdb',
     'information',
     'dbms',
-    'tools',
+    'reports',
 ]
 
 MIDDLEWARE = [

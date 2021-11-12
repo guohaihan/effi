@@ -50,7 +50,7 @@ urlpatterns = [
     path(f'{base_api}cmdb/', include('cmdb.urls')),  # 资产管理模块
     path(f'{base_api}information/', include('information.urls')),  # 个人中心模块
     path(f'{base_api}dbms/', include('dbms.urls')),  # 果之数据库模块
-    path(f'{base_api}tools/', include('tools.urls')),  # jira、jenkins等工具模块
+    path(f'{base_api}reports/', include('reports.urls')),  # jira、jenkins等工具模块
 
     # swagger(API文档)
     re_path(rf'^{base_api}swagger(?P<format>\.json|\.yaml)$',

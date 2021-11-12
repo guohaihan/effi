@@ -15,6 +15,9 @@ from django.http import HttpResponse
 from django.views.decorators.csrf import csrf_exempt
 from drf_admin.utils.swagger_schema import OperationIDAutoSchema
 from rest_framework.generics import get_object_or_404
+from rest_framework.decorators import api_view
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 
 class MultipleDestroyMixin:
@@ -142,8 +145,28 @@ class ChoiceAPIView(APIView):
 
 
 # 文件上传
+@swagger_auto_schema(
+    method='post',
+    operation_summary='文件上传',
+    type=openapi.IN_FORM,
+    operation_description='Content-Type需要用这个:multipart/form-data',
+    request_body=openapi.Schema(
+        type=openapi.TYPE_OBJECT,
+        properties={
+            "file": openapi.Schema(title="上传文件", type=openapi.TYPE_FILE)
+        }
+    ),
+    responses={200: "返回文件内容"}
+)
 @csrf_exempt
+@api_view(["post"])
 def upload_file(request):
+    """
+    post:
+    文件上传
+
+    status: 200(成功), return: 文件内容
+    """
     if request.method != 'POST':
         return HttpResponse('请求方法错误')
     f = request.FILES['file']

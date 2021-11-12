@@ -1,6 +1,7 @@
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view
 from dbms.models import OperateLogs, DBServerConfig, Audits
+from system.models import CommonConfig
 from rest_framework.response import Response
 from django_filters.rest_framework.filterset import FilterSet
 from django_filters import filters
@@ -45,17 +46,29 @@ class MysqlList(object):
         3，进行脱敏字段比对；
         4，确认sql最后是否有limit，无则使用默认值；
         """
-        redis_conn = get_redis_connection('desensitises_config')  # 连接redis，获取脱敏配置
-        desensitises = redis_conn.smembers("desensitises")
-        limit = redis_conn.get("limit")
+        # redis_conn = get_redis_connection('desensitises_config')  # 连接redis，获取脱敏配置
+        # desensitises = redis_conn.smembers("desensitises")
+        # limit = redis_conn.get("limit")
+        # desensitises_l = []
+        # if desensitises:
+        #     for d_i in desensitises:
+        #         desensitises_l.append(d_i.decode("utf-8"))
+        # if not limit:
+        #     limit = 1000
+        # else:
+        #     limit = int(limit.decode("utf-8"))
+
         desensitises_l = []
+        # 获取脱敏字段
+        desensitises = CommonConfig.objects.filter(server="dbms", name="desensitises")
         if desensitises:
-            for d_i in desensitises:
-                desensitises_l.append(d_i.decode("utf-8"))
-        if not limit:
-            limit = 1000
+            desensitises_l = eval(desensitises.values()[0]["value"])
+        # 获取限制条数
+        limit = CommonConfig.objects.filter(server="dbms", name="limit")
+        if limit:
+            limit = eval(limit.values()[0]["value"])
         else:
-            limit = int(limit.decode("utf-8"))
+            limit = 1000
         if isinstance(sql, str):
             sql = [sql]  # 如果只有一条sql，将sql放入列表
         for i in range(len(sql)):
@@ -64,7 +77,7 @@ class MysqlList(object):
                 # 查询语句没有*时
                 result = re.search(r'select (.*?) from', sql[i], re.DOTALL | re.I)
                 if not result:
-                    return {"sql": sql[i], "message": "FAIL，失败原因：缺少字段名；"}
+                    return [{"sql": sql[i], "message": "FAIL，失败原因：缺少字段名；"}]
                 col_name = result.group(1).split(",")
                 for col_i in range(len(col_name)):
                     # 字段重命名时，是否有as
@@ -122,12 +135,24 @@ class MysqlList(object):
             )
         except Exception as e:
             return {"error": "连接数据库失败！失败原因：%s" % e}
-        redis_conn = get_redis_connection('desensitises_config')  # 连接redis，获取脱敏配置
-        desensitises = redis_conn.smembers("desensitises")
+        # redis_conn = get_redis_connection('desensitises_config')  # 连接redis，获取脱敏配置
+        # desensitises = redis_conn.smembers("desensitises")
+        # desensitises_l = []
+        # if desensitises:
+        #     for d_i in desensitises:
+        #         desensitises_l.append(d_i.decode("utf-8"))
+
         desensitises_l = []
+        # 获取脱敏字段
+        desensitises = CommonConfig.objects.filter(server="dbms", name="desensitises")
         if desensitises:
-            for d_i in desensitises:
-                desensitises_l.append(d_i.decode("utf-8"))
+            desensitises_l = eval(desensitises.values()[0]["value"])
+        # 获取限制条数
+        limit = CommonConfig.objects.filter(server="dbms", name="limit")
+        if limit:
+            limit = eval(limit.values()[0]["value"])
+        else:
+            limit = 1000
 
         cur = conn.cursor()  # 创建游标
         info = []
@@ -135,6 +160,11 @@ class MysqlList(object):
             sql = [sql]  # 如果只有一条sql，将sql放入列表
         for sql_i in sql:
             sql_i = sql_i.lower().replace("\n", " ").strip()
+            if sql_i.startswith("select"):
+                # 判断有无limit，不存在时，添加limit
+                result = re.search(r'.* limit [0-9]+;', sql_i, re.DOTALL|re.I)
+                if not result:
+                    sql_i = sql_i.replace(";", " limit %d;" % limit)
             try:
                 row_count = cur.execute(sql_i)
                 if sql_i.startswith("alter") or sql_i.startswith("update"):
@@ -154,6 +184,8 @@ class MysqlList(object):
                     info.append({"sql": sql_i, "message": "OK"})
             except Exception as e:
                 conn.rollback()
+                cur.close()
+                conn.close()
                 info.append({"sql": sql_i, "message": "FAIL，失败原因：{}".format(e)})
                 return info
         conn.commit()
@@ -305,10 +337,10 @@ class DatabasesView(APIView):
             obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"],
                             database_name_i)
             # 执行sql操作
-            if not db_env:
-                sql_info = obj.execute_sql(result, db_env=db_env)
+            if db_env:
+                sql_info = obj.execute_sql(result, db_env=db_env)  # 非生产环境时，不进行脱敏
             else:
-                sql_info = obj.desen(result)
+                sql_info = obj.desen(result)  # 生产环境时，进行脱敏操作
             if "FAIL" in sql_info[-1]["message"]:
                 status = 0
                 error_info = "失败sql：" + sql_info[-1]["sql"] + "\n" + sql_info[-1]["message"]
@@ -424,7 +456,15 @@ class AuditsViewSet(AdminViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        send_dingding_msg.delay("你有新的待审核的sql！")
+        access_token = "241dc3a7aaf7c97ca10aa122f6e5568b1b0c6c3a4dbcc6454b08a64f0ca9d0c7"
+        # send_dingding_msg.delay(access_token, "text", "你有新的待审核的sql！")
+        send_dingding_msg.delay(access_token, "actionCard", {
+                "title": "乔布斯 20 年前想打造一间苹果咖啡厅，而它正是 Apple Store 的前身",
+                "text": "![screenshot](https://gw.alicdn.com/tfs/TB1ut3xxbsrBKNjSZFpXXcXhFXa-846-786.png)",
+                "btnOrientation": "0",
+                "singleTitle": "阅读全文",
+                "singleURL": "https://www.dingtalk.com/"
+    })
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def multiple_update(self, request, *args, **kwargs):
