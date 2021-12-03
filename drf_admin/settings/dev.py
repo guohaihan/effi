@@ -67,6 +67,8 @@ INSTALLED_APPS = [
     'information',
     'dbms',
     'reports',
+    # 多选
+    'multiselectfield',
 ]
 
 MIDDLEWARE = [

@@ -23,7 +23,7 @@ from rest_framework import status
 import json
 from celery_tasks.dingding.tasks import send_dingding_msg
 from django.views.decorators.http import require_POST
-from django.http import HttpResponse, JsonResponse
+from django.http import HttpResponse
 from openpyxl import Workbook
 import os
 from django_redis import get_redis_connection
@@ -171,7 +171,6 @@ class MysqlList(object):
                     info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count})
                 elif sql_i.startswith("select"):
                     res = cur.fetchall()  # 获取执行的返回结果
-                    # if res and not db_env:
                     if res:
                         for key_i in list(res[0].keys()):
                             if key_i in ["create_time", "update_time"]:
