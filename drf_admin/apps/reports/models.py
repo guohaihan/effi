@@ -23,6 +23,7 @@ class ItemReports(BaseModel):
     rf_day = models.DecimalField(max_digits=3, decimal_places=1, verbose_name="研发工作日")
     test_day = models.DecimalField(max_digits=3, decimal_places=1, verbose_name="测试工作日")
     acceptance_day = models.DecimalField(max_digits=3, decimal_places=1, verbose_name="验收工作日")
+    group = models.IntegerField(verbose_name="研发组数")
     risk = models.CharField(null=True, blank=True, max_length=255, verbose_name="风险内容")
     legacy = models.CharField(null=True, blank=True, max_length=255, verbose_name="遗留问题")
     feel = models.TextField(null=True, blank=True, verbose_name="整体感受")
@@ -69,6 +70,7 @@ class Score(models.Model):
     todo = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="冒烟通过率得分")
     unit_bug = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="单位bug数")
     finish_story_day = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="每天完成的故事点")
+    total = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="迭代得分")
     item_reports = models.OneToOneField("ItemReports", on_delete=models.CASCADE, verbose_name="迭代报告id")
 
     class Meta:
