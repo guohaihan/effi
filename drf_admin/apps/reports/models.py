@@ -52,10 +52,10 @@ class Story(models.Model):
 
 class ToDo(models.Model):
     problem = models.CharField(max_length=255, verbose_name="问题描述")
-    solution = models.CharField(max_length=255, verbose_name="解决方案")
+    solution = models.CharField(blank=True, max_length=255, verbose_name="解决方案")
     principal = models.CharField(max_length=10, verbose_name="负责人")
     status = models.BooleanField(verbose_name="解决状态")
-    remark = models.CharField(max_length=255, verbose_name="备注")
+    remark = models.CharField(blank=True, max_length=255, verbose_name="备注")
     item_reports = models.ForeignKey("ItemReports", on_delete=models.CASCADE, verbose_name="迭代报告id")
 
     class Meta:

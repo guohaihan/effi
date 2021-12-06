@@ -94,6 +94,10 @@ def score(data):
 
 class ItemReportsViewSet(AdminViewSet):
     """
+    get_reports:
+    报告统计--列表
+
+    列表, status: 201(成功), return: 列表
     list:
     报告--列表
 
