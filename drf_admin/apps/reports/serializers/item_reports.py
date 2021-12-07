@@ -5,7 +5,7 @@
 @file     : item_reports.py
 @create   : 2021/12/2 10:58
 """
-from rest_framework import serializers
+from rest_framework import serializers, fields
 from reports.models import ItemReports, Story, ToDo, Score, BugClass
 
 
@@ -16,10 +16,12 @@ class StorySerializer(serializers.ModelSerializer):
 
 
 class ToDoSerializer(serializers.ModelSerializer):
+    item_reports = serializers.CharField(required=False)
+    item_reports_id = serializers.CharField(required=False)
+
     class Meta:
         model = ToDo
-        exclude = ['item_reports']
-        # fields = "__all__"
+        fields = "__all__"
 
 
 class ScoreSerializer(serializers.ModelSerializer):
@@ -35,6 +37,15 @@ class BugClassSerializer(serializers.ModelSerializer):
 
 
 class ItemReportsSerializer(serializers.ModelSerializer):
+    type_choices = (
+        (1, "教师pc端"),
+        (2, "教师小程序端"),
+        (3, "教师管理后台端"),
+        (4, "学生pc端"),
+        (5, "学生小程序端"),
+        (6, "家长小程序端"),
+    )
+    type = fields.MultipleChoiceField(choices=type_choices)
     storys = StorySerializer(many=True, write_only=True)
     todos = ToDoSerializer(many=True, write_only=True)
     scores = ScoreSerializer(many=True, write_only=True)
@@ -42,8 +53,7 @@ class ItemReportsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ItemReports
-        # fields = "__all__"
-        exclude = ("type",)
+        fields = "__all__"
 
     def create(self, validated_data):
         storys_data = validated_data.pop("storys")
@@ -77,7 +87,7 @@ class ItemReportsSerializer(serializers.ModelSerializer):
         bug_classs_data = validated_data.pop("bug_classs")
         item_report = super().update(instance, validated_data)
 
-        # 删除之前的故事和待办
+        # 删除要更新报告之前的故事和待办
         Story.objects.filter(item_reports=item_report).delete()
         ToDo.objects.filter(item_reports=item_report).delete()
 
@@ -87,7 +97,13 @@ class ItemReportsSerializer(serializers.ModelSerializer):
 
         if todos_data:
             for todo_data in todos_data:
-                ToDo.objects.create(item_reports=item_report, **todo_data)
+                if "item_reports_id" in todo_data:
+                    if todo_data["item_reports_id"] and todo_data["item_reports_id"] != item_report.id:
+                        ToDo.objects.filter(item_reports_id=todo_data["item_reports_id"]).update(**todo_data)
+                    else:
+                        ToDo.objects.create(item_reports=item_report, **todo_data)
+                else:
+                    ToDo.objects.create(item_reports=item_report, **todo_data)
 
         if scores_data:
             for score_data in scores_data:

@@ -14,7 +14,7 @@ class ItemReports(BaseModel):
         (6, "家长小程序端"),
     )
     name = models.CharField(max_length=50, unique=True, verbose_name="迭代名称")
-    type = MultiSelectField(max_length=10, choices=type_choices, verbose_name="测试端类型")
+    type = MultiSelectField(choices=type_choices, verbose_name="测试端类型")
     content = models.CharField(max_length=200, verbose_name="需求内容")
     domain_influence = models.CharField(null=True, blank=True, max_length=200, verbose_name="影响域")
     start_time = models.DateField(verbose_name="开始时间")

@@ -20,7 +20,7 @@ CREATE TABLE `reports_item_reports` (
   `create_time` datetime(6) NOT NULL COMMENT '创建时间',
   `update_time` datetime(6) NOT NULL COMMENT '更新时间',
   `name` varchar(50) NOT NULL COMMENT '迭代名称',
-  `type` varchar(10) NOT NULL COMMENT '测试端类型',
+  `type` varchar(11) NOT NULL,
   `content` varchar(200) NOT NULL COMMENT '需求内容',
   `domain_influence` varchar(200) DEFAULT NULL COMMENT '影响域',
   `start_time` date NOT NULL COMMENT '开始时间',
@@ -35,7 +35,7 @@ CREATE TABLE `reports_item_reports` (
   `feel` longtext COMMENT '整体感受',
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8 COMMENT='果之迭代报告';
+) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8 COMMENT='果之迭代报告';
 
 
 CREATE TABLE `reports_score` (

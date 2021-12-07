@@ -127,10 +127,17 @@ class ItemReportsViewSet(AdminViewSet):
 
     信息, status: 201(成功), return: null
     """
+    from rest_framework import filters
+
+    class CustomSearchFilter(filters.SearchFilter):
+        def get_search_fields(self, view, request):
+            if request.query_params.get('title_only'):
+                return ['name']
+            return super().get_search_fields(view, request)
     queryset = ItemReports.objects.order_by("-update_time")
     serializer_class = ItemReportsSerializer
     # 自定义过滤字段
-    filter_backends = [SearchFilter]
+    filter_backends = [CustomSearchFilter]
     search_fields = ("name", "content")
 
     def create(self, request, *args, **kwargs):
