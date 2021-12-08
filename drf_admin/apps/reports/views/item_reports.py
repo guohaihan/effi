@@ -5,7 +5,7 @@
 @file     : item_reports.py
 @create   : 2021/12/2 13:43
 """
-from django.db.models import Count, Sum, Avg
+from django.db.models import Count, Avg, DecimalField
 from rest_framework.decorators import action
 from reports.models import ItemReports, Score
 from rest_framework.response import Response
@@ -13,7 +13,7 @@ from rest_framework.filters import SearchFilter
 from reports.serializers.item_reports import ItemReportsSerializer
 from drf_admin.utils.views import AdminViewSet
 from rest_framework import status
-from django.db.models.functions import TruncMonth, TruncWeek, TruncYear, TruncDay, TruncQuarter, Round
+from django.db.models.functions import TruncMonth, TruncYear, TruncQuarter, Cast
 
 
 def score(data):
@@ -127,17 +127,10 @@ class ItemReportsViewSet(AdminViewSet):
 
     信息, status: 201(成功), return: null
     """
-    from rest_framework import filters
-
-    class CustomSearchFilter(filters.SearchFilter):
-        def get_search_fields(self, view, request):
-            if request.query_params.get('title_only'):
-                return ['name']
-            return super().get_search_fields(view, request)
     queryset = ItemReports.objects.order_by("-update_time")
     serializer_class = ItemReportsSerializer
     # 自定义过滤字段
-    filter_backends = [CustomSearchFilter]
+    filter_backends = [SearchFilter]
     search_fields = ("name", "content")
 
     def create(self, request, *args, **kwargs):
@@ -167,6 +160,8 @@ class ItemReportsViewSet(AdminViewSet):
 
     @action(detail=False, methods=["get"])
     def get_reports(self, request):
+        if "type" not in request.GET:
+            return Response(data={"error": "缺少类型参数，请求参数格式：type: year/quarter/year"}, status=400)
         if request.GET["type"] in ["year", "month", "quarter"]:
             if request.GET["type"] == "year":
                 type = TruncYear("item_reports__end_time")
@@ -174,7 +169,8 @@ class ItemReportsViewSet(AdminViewSet):
                 type = TruncQuarter("item_reports__end_time")
             else:
                 type = TruncMonth("item_reports__end_time")
-            queryset = Score.objects.annotate(type=type).values("type").annotate(unit_bug=Avg("unit_bug"), total=Avg("total"), finish_story_day=Avg("finish_story_day"), todo=Avg("todo"), count=Count("id"))
+            output_field = DecimalField(max_digits=10, decimal_places=2)
+            queryset = Score.objects.annotate(type=type).values("type").annotate(unit_bug=Cast(Avg("unit_bug"), output_field), total=Cast(Avg("total"), output_field), finish_story_day=Cast(Avg("finish_story_day"), output_field), todo=Cast(Avg("todo"), output_field), total_day=Cast(Avg("item_reports__total_day"), output_field), count=Count("id"))
             return Response(data=queryset)
         else:
             return Response(data={"error": "只支持年、季度、月"}, status=400)
