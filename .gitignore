@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 1.py
 drf_admin.conf
-*.types
+mime.types
 uwsgi.*
 
 # C extensions
