@@ -37,22 +37,35 @@ def counts(request):
     except Exception as e:
         return HttpResponse("失败原因：%s" % e, status=400)
     jql = """project = GZ AND status in (Open, "In Progress", Reopened, Resolved, 已关闭) AND fixVersion = "%s" ORDER BY assignee ASC, key DESC, summary ASC, created DESC""" % sprint
+    story_jql = """project = GZ AND issuetype = 故事 AND fixVersion = "%s" ORDER BY summary DESC, key DESC, assignee ASC, created DESC""" % sprint
     try:
         issue_list = jira_client.search_issues(jql, maxResults=False)
+        story_issue_list = jira_client.search_issues(story_jql, maxResults=False)
     except Exception as e:
         return HttpResponse(e.text, status=400)
     assignee_list = []
     issuetype_list = []
-    my_dict = {"assignee": assignee_list, "issuetype": issuetype_list}
+    story_list = []
+    my_dict = {"assignee": assignee_list, "issuetype": issuetype_list, "story": story_list}
     for issue_i in issue_list:
         field = jira_client.issue(issue_i.key).fields
         assignee_list.append(str(field.assignee))  # assignee经办人
         issuetype_list.append(str(field.issuetype))  # issuetype问题类型
 
-    for key in my_dict.keys():
+    for key in ["assignee", "issuetype"]:
         count = {}
         for li in my_dict[key]:
             count.setdefault(li, 0)
             count[li] += 1
         my_dict[key] = count
+
+    for story_i in story_issue_list:
+        story_field = jira_client.issue(story_i.key).fields
+        # 获取研发人员
+        rd_fe_list = story_field.customfield_10306
+        if rd_fe_list:
+            pattern = re.compile(r"displayName=(.*?),")
+            rd_fe = pattern.findall(str(rd_fe_list))
+        my_dict["story"].append({"key": story_i.key, "summary": story_field.summary, "story_point": story_field.customfield_10106, "rd_fe": rd_fe})
+
     return JsonResponse(my_dict)

@@ -3,6 +3,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 1.py
+drf_admin.conf
+mime.types
+uwsgi.*
 
 # C extensions
 *.so
