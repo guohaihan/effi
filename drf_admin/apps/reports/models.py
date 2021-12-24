@@ -40,8 +40,7 @@ class Story(models.Model):
     product_delays = models.DecimalField(max_digits=3, decimal_places=1, verbose_name="需求导致延期")
     develop_delays = models.DecimalField(max_digits=3, decimal_places=1, verbose_name="研发导致延期")
     smoking_by = models.BooleanField(verbose_name="冒烟是否通过")
-    rd = models.CharField(max_length=10, verbose_name="后端人员")
-    fe = models.CharField(max_length=10, verbose_name="前端人员")
+    develop = models.CharField(max_length=50, verbose_name="研发人员")
     item_reports = models.ForeignKey("ItemReports", on_delete=models.CASCADE, verbose_name="迭代报告id")
 
     class Meta:
