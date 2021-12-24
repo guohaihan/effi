@@ -136,3 +136,5 @@ dmypy.json
 .pyre/
 /apps/dbms/migrations/*
 migrations/
+node_modules/
+package-lock.json

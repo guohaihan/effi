@@ -1,19 +1,3 @@
-CREATE TABLE `reports_bug_class`
-(
-    `id`                 int NOT NULL AUTO_INCREMENT COMMENT '' ID '',
-    `function_error`     int NOT NULL COMMENT '' 功能错误 '',
-    `function_optimize`  int NOT NULL COMMENT '' 功能优化 '',
-    `interface_optimize` int NOT NULL COMMENT '' 界面优化 '',
-    `performance`        int NOT NULL COMMENT '' 性能优化 '',
-    `safety`             int NOT NULL COMMENT '' 安全问题 '',
-    `rd`                 int NOT NULL COMMENT '' 后端bug '',
-    `fe`                 int NOT NULL COMMENT '' 前端bug '',
-    `item_reports_id`    int NOT NULL COMMENT '' 迭代报告id '',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `item_reports_id` (`item_reports_id`),
-    CONSTRAINT `reports_bug_class_item_reports_id_70950493_fk_reports_i` FOREIGN KEY (`item_reports_id`) REFERENCES `reports_item_reports` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8 COMMENT=''bug分类表'';
-
 
 CREATE TABLE `reports_item_reports` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',
@@ -36,6 +20,23 @@ CREATE TABLE `reports_item_reports` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `name` (`name`)
 ) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8 COMMENT='果之迭代报告';
+
+
+CREATE TABLE `reports_bug_class` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `function_error` int NOT NULL COMMENT '功能错误',
+  `function_optimize` int NOT NULL COMMENT '功能优化',
+  `interface_optimize` int NOT NULL COMMENT '界面优化',
+  `performance` int NOT NULL COMMENT '性能优化',
+  `safety` int NOT NULL COMMENT '安全问题',
+  `rd` int NOT NULL COMMENT '后端bug',
+  `fe` int NOT NULL COMMENT '前端bug',
+  `item_reports_id` int NOT NULL COMMENT '迭代报告id',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `item_reports_id` (`item_reports_id`),
+  CONSTRAINT `reports_bug_class_item_reports_id_70950493_fk_reports_i` FOREIGN KEY (`item_reports_id`) REFERENCES `reports_item_reports` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8 COMMENT='bug分类表';
+
 
 
 CREATE TABLE `reports_score` (
