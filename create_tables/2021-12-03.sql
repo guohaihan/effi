@@ -1,18 +1,17 @@
-CREATE TABLE `reports_bug_class`
-(
-    `id`                 int NOT NULL AUTO_INCREMENT COMMENT '' ID '',
-    `function_error`     int NOT NULL COMMENT '' 功能错误 '',
-    `function_optimize`  int NOT NULL COMMENT '' 功能优化 '',
-    `interface_optimize` int NOT NULL COMMENT '' 界面优化 '',
-    `performance`        int NOT NULL COMMENT '' 性能优化 '',
-    `safety`             int NOT NULL COMMENT '' 安全问题 '',
-    `rd`                 int NOT NULL COMMENT '' 后端bug '',
-    `fe`                 int NOT NULL COMMENT '' 前端bug '',
-    `item_reports_id`    int NOT NULL COMMENT '' 迭代报告id '',
-    PRIMARY KEY (`id`),
-    UNIQUE KEY `item_reports_id` (`item_reports_id`),
-    CONSTRAINT `reports_bug_class_item_reports_id_70950493_fk_reports_i` FOREIGN KEY (`item_reports_id`) REFERENCES `reports_item_reports` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8 COMMENT=''bug分类表'';
+CREATE TABLE `reports_bug_class` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',
+  `function_error` int NOT NULL COMMENT '功能错误',
+  `function_optimize` int NOT NULL COMMENT '功能优化',
+  `interface_optimize` int NOT NULL COMMENT '界面优化',
+  `performance` int NOT NULL COMMENT '性能优化',
+  `safety` int NOT NULL COMMENT '安全问题',
+  `rd` int NOT NULL COMMENT '后端bug',
+  `fe` int NOT NULL COMMENT '前端bug',
+  `item_reports_id` int NOT NULL COMMENT '迭代报告id',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `item_reports_id` (`item_reports_id`),
+  CONSTRAINT `reports_bug_class_item_reports_id_70950493_fk_reports_i` FOREIGN KEY (`item_reports_id`) REFERENCES `reports_item_reports` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8 COMMENT='bug分类表';
 
 
 CREATE TABLE `reports_item_reports` (
@@ -60,13 +59,12 @@ CREATE TABLE `reports_story` (
   `product_delays` decimal(3,1) NOT NULL COMMENT '需求导致延期',
   `develop_delays` decimal(3,1) NOT NULL COMMENT '研发导致延期',
   `smoking_by` tinyint(1) NOT NULL COMMENT '冒烟是否通过',
-  `rd` varchar(10) NOT NULL COMMENT '后端人员',
-  `fe` varchar(10) NOT NULL COMMENT '前端人员',
+  `develop` varchar(50) NOT NULL COMMENT '研发人员',
   `item_reports_id` int NOT NULL COMMENT '迭代报告id',
   PRIMARY KEY (`id`),
   KEY `reports_story_item_reports_id_77159057_fk_reports_i` (`item_reports_id`),
   CONSTRAINT `reports_story_item_reports_id_77159057_fk_reports_i` FOREIGN KEY (`item_reports_id`) REFERENCES `reports_item_reports` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=51 DEFAULT CHARSET=utf8 COMMENT='故事表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='故事表';
 
 
 CREATE TABLE `reports_to_do` (
