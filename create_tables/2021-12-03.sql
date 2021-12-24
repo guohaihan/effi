@@ -1,4 +1,3 @@
-
 CREATE TABLE `reports_item_reports` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `create_time` datetime(6) NOT NULL COMMENT '创建时间',
@@ -102,3 +101,6 @@ CREATE TABLE `reports_to_do` (
   KEY `reports_to_do_item_reports_id_40561ad6_fk_reports_i` (`item_reports_id`),
   CONSTRAINT `reports_to_do_item_reports_id_40561ad6_fk_reports_i` FOREIGN KEY (`item_reports_id`) REFERENCES `reports_item_reports` (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=39 DEFAULT CHARSET=utf8 COMMENT='待办表';
+
+
+-- 1
