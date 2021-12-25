@@ -1,4 +1,6 @@
 from django.db import models
+from django.utils import timezone
+
 from drf_admin.utils.models import BaseModel
 from multiselectfield import MultiSelectField
 # Create your models here.
@@ -27,6 +29,8 @@ class ItemReports(BaseModel):
     risk = models.CharField(null=True, blank=True, max_length=255, verbose_name="风险内容")
     legacy = models.CharField(null=True, blank=True, max_length=255, verbose_name="遗留问题")
     feel = models.TextField(null=True, blank=True, verbose_name="整体感受")
+    create_time=models.DateTimeField(default = timezone.now)
+    update_time = models.DateTimeField(default = timezone.now)
 
     class Meta:
         db_table = 'reports_item_reports'
@@ -42,6 +46,8 @@ class Story(models.Model):
     smoking_by = models.BooleanField(verbose_name="冒烟是否通过")
     develop = models.CharField(max_length=50, verbose_name="研发人员")
     item_reports = models.ForeignKey("ItemReports", on_delete=models.CASCADE, verbose_name="迭代报告id")
+    create_time = models.DateTimeField(default=timezone.now)
+    update_time = models.DateTimeField(default=timezone.now)
 
     class Meta:
         db_table = "reports_story"
@@ -55,7 +61,10 @@ class ToDo(models.Model):
     principal = models.CharField(max_length=10, verbose_name="负责人")
     status = models.BooleanField(verbose_name="解决状态")
     remark = models.CharField(blank=True, max_length=255, verbose_name="备注")
+    create_time = models.DateTimeField(default=timezone.now)
+    update_time = models.DateTimeField(default=timezone.now)
     item_reports = models.ForeignKey("ItemReports", on_delete=models.CASCADE, verbose_name="迭代报告id")
+
 
     class Meta:
         db_table = "reports_to_do"
@@ -70,6 +79,8 @@ class Score(models.Model):
     unit_bug = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="单位bug数")
     finish_story_day = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="每天完成的故事点")
     total = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="迭代得分")
+    create_time = models.DateTimeField(default=timezone.now)
+    update_time = models.DateTimeField(default=timezone.now)
     item_reports = models.OneToOneField("ItemReports", on_delete=models.CASCADE, verbose_name="迭代报告id")
 
     class Meta:
@@ -86,7 +97,10 @@ class BugClass(models.Model):
     safety = models.IntegerField(default=False, verbose_name="安全问题")
     rd = models.IntegerField(default=False, verbose_name="后端bug")
     fe = models.IntegerField(default=False, verbose_name="前端bug")
+    create_time = models.DateTimeField(default=timezone.now)
+    update_time = models.DateTimeField(default=timezone.now)
     item_reports = models.OneToOneField("ItemReports", on_delete=models.CASCADE, verbose_name="迭代报告id")
+
 
     class Meta:
         db_table = "reports_bug_class"
