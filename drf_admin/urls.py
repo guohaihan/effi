@@ -26,12 +26,12 @@ from drf_admin.utils import views
 # swagger API文档配置 https://github.com/axnsan12/drf-yasg
 schema_view = get_schema_view(
     openapi.Info(
-        title="DRF Admin API",
-        default_version='v1.0.0',
-        description="Test Description",
+        title="EP API",
+        default_version='V1.0.0',
+        description="guozhi-efficiency-platform",
         # terms_of_service="https://github.com/tianpangji",
-        contact=openapi.Contact(email="1255925586@qq.com"),
-        license=openapi.License(name="BSD License"),
+        contact=openapi.Contact(email="devops@gugouokeji.com"),
+        license=openapi.License(name="guoguo tech team"),
     ),
     public=True,
     permission_classes=(permissions.AllowAny,),

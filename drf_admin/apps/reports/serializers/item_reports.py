@@ -49,7 +49,7 @@ class ItemReportsSerializer(serializers.ModelSerializer):
     storys = StorySerializer(many=True, write_only=True)
     todos = ToDoSerializer(many=True, write_only=True)
     scores = ScoreSerializer(many=True, write_only=True)
-    bug_classs = BugClassSerializer(many=True, write_only=True)
+    bug_class = BugClassSerializer(many=True, write_only=True)
 
     class Meta:
         model = ItemReports
@@ -59,7 +59,7 @@ class ItemReportsSerializer(serializers.ModelSerializer):
         storys_data = validated_data.pop("storys")
         todos_data = validated_data.pop("todos")
         scores_data = validated_data.pop("scores")
-        bug_classs_data = validated_data.pop("bug_classs")
+        bug_class_data = validated_data.pop("bug_class")
         item_report = ItemReports.objects.create(**validated_data)
 
         if storys_data:
@@ -74,8 +74,8 @@ class ItemReportsSerializer(serializers.ModelSerializer):
             for score_data in scores_data:
                 Score.objects.create(item_reports=item_report, **score_data)
 
-        if bug_classs_data:
-            for bug_class_data in bug_classs_data:
+        if bug_class_data:
+            for bug_class_data in bug_class_data:
                 BugClass.objects.create(item_reports=item_report, **bug_class_data)
 
         return item_report
@@ -84,7 +84,7 @@ class ItemReportsSerializer(serializers.ModelSerializer):
         storys_data = validated_data.pop("storys")
         todos_data = validated_data.pop("todos")
         scores_data = validated_data.pop("scores")
-        bug_classs_data = validated_data.pop("bug_classs")
+        bug_class_data = validated_data.pop("bug_class")
         item_report = super().update(instance, validated_data)
 
         # 删除要更新报告之前的故事和待办
@@ -109,8 +109,8 @@ class ItemReportsSerializer(serializers.ModelSerializer):
             for score_data in scores_data:
                 Score.objects.filter(item_reports=instance, item_reports_id=instance.id).update(**score_data)
 
-        if bug_classs_data:
-            for bug_class_data in bug_classs_data:
+        if bug_class_data:
+            for bug_class_data in bug_class_data:
                 BugClass.objects.filter(item_reports=instance, item_reports_id=instance.id).update(**bug_class_data)
 
         return instance
@@ -121,6 +121,6 @@ class ItemReportsSerializer(serializers.ModelSerializer):
         ret["storys"] = Story.objects.filter(item_reports=instance.id).values()
         ret["todos"] = ToDo.objects.filter(item_reports=instance.id).values()
         ret["scores"] = Score.objects.filter(item_reports=instance.id).values()
-        ret["bug_classs"] = BugClass.objects.filter(item_reports=instance.id).values()
+        ret["bug_class"] = BugClass.objects.filter(item_reports=instance.id).values()
         ret["todo_unsolved"] = ToDo.objects.filter(status=False).values()  # 返回未解决的待办
         return ret

@@ -22,10 +22,10 @@ def score(data):
     todo_count = 0
     total_story = 0
     score_data = []
-    if not {"rf_day", "group", "storys", "bug_classs"}.issubset(data.keys()):
-        return "研发工作日、研发组数、故事、bug分类为必传字段！"
-    if not data["group"] or not data["storys"] or not data["bug_classs"] or not data["rf_day"]:
-        return "研发工作日、研发组数、故事、bug分类不能为空！"
+    if not {"rf_day",  "storys", "bug_class"}.issubset(data.keys()):
+        return "研发工作日、故事、bug分类为必传字段！"
+    if not data["storys"] or not data["bug_class"] or not data["rf_day"]:
+        return "研发工作日、研发组数、bug分类不能为空！"
     if not isinstance(data["group"], int):
         return "研发组数必须为整数！"
     if not isinstance(data["rf_day"], (float, int)):
@@ -42,7 +42,7 @@ def score(data):
         if story["smoking_by"] == "false":
             todo_count += 1  # 冒烟不通过数量
         total_story += story["assess_length"]  # 总故事点
-    for bug in data["bug_classs"]:
+    for bug in data["bug_class"]:
         if not {"rd", "fe"}.issubset(bug.keys()):
             return "bug分类中未填写前后端数量！"
         if not isinstance(bug["rd"], int) or not isinstance(bug["fe"], int):
