@@ -7,7 +7,7 @@
 """
 from jira import JIRA
 from django.http import JsonResponse, HttpResponse
-import re
+import re, time
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -34,6 +34,8 @@ def counts(request):
     server = "http://project.guoguokeji.com"
     try:
         jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
+        # jira_vesion = jira_client.project_versions("GZ")
+        # # print("jira-version", jira_vesion)
     except Exception as e:
         return HttpResponse("失败原因：%s" % e, status=400)
     jql = """project = GZ AND status in (Open, "In Progress", Reopened, Resolved, 已关闭) AND fixVersion = "%s" ORDER BY assignee ASC, key DESC, summary ASC, created DESC""" % sprint
@@ -48,17 +50,14 @@ def counts(request):
     story_list = []
     my_dict = {"assignee": assignee_list, "issuetype": issuetype_list, "story": story_list}
     for issue_i in issue_list:
-        field = jira_client.issue(issue_i.key).fields
-        assignee_list.append(str(field.assignee))  # assignee经办人
-        issuetype_list.append(str(field.issuetype))  # issuetype问题类型
-
+        assignee_list.append(str(issue_i.fields.assignee))  # assignee经办人
+        issuetype_list.append(str(issue_i.fields.issuetype))  # issuetype问题类型
     for key in ["assignee", "issuetype"]:
         count = {}
         for li in my_dict[key]:
             count.setdefault(li, 0)
             count[li] += 1
         my_dict[key] = count
-
     for story_i in story_issue_list:
         story_field = jira_client.issue(story_i.key).fields
         # 获取研发人员
@@ -68,5 +67,4 @@ def counts(request):
             for rd_fe_i in rd_fe_list:
                 rd_fe.append(str(rd_fe_i))
         my_dict["story"].append({"key": story_i.key, "summary": story_field.summary, "story_point": story_field.customfield_10106, "rd_fe": rd_fe})
-
     return JsonResponse(my_dict)
