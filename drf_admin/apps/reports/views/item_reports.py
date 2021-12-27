@@ -162,8 +162,25 @@ class ItemReportsViewSet(AdminViewSet):
 
     @action(detail=False, methods=["get"])
     def get_reports(self, request):
-        if "type" not in request.GET:
-            return Response(data={"error": "缺少类型参数，请求参数格式：type: year/quarter/month/sprint/date"}, status=400)
+        # 支持日期搜索
+        if "startDate" in request.GET and "endDate" in request.GET:
+            output_field = DecimalField(max_digits=10, decimal_places=2)
+            queryset = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lte=request.GET["endDate"]).aggregate(rfDay=Cast(Avg("rf_day"), output_field), totalDay=Cast(Avg("total_day"), output_field),
+                scoreProductScore=Cast(Avg("score__product_score"), output_field),
+                scoreRfDelay=Cast(Avg("score__rf_delay"), output_field),
+                scoreTodo=Cast(Avg("score__todo"), output_field),
+                scoreUnitBug=Cast(Avg("score__unit_bug"), output_field),
+                scoreTotal=Cast(Avg("score__total"), output_field),
+                scoreFinishStoryDay=Cast(Avg("score__finish_story_day"), output_field),
+                testDay=Cast(Avg("test_day"), output_field), acceptanceDay=Cast(Avg("acceptance_day"), output_field))
+            queryset = [queryset]
+            for queryset_i in queryset:
+                queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lte=request.GET["endDate"]).values("end_time", "name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story"))
+                queryset_i["info"] = queryset_info
+            return Response(data=queryset)
+
+        elif "type" not in request.GET:
+            return Response(data={"error": "缺少类型参数，请求参数格式：type: year/quarter/month/sprint或startDate=&endDate="}, status=400)
         if request.GET["type"] in ["year", "month", "quarter"]:
             if request.GET["type"] == "year":
                 type = TruncYear("end_time")
@@ -183,21 +200,6 @@ class ItemReportsViewSet(AdminViewSet):
             return Response(data=queryset)
         elif request.GET["type"] == "sprint":
             queryset = ItemReports.objects.all().values("name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story")).order_by("-create_time")
-            return Response(data=queryset)
-        elif "startDate" in request.GET and "endDate" in request.GET:
-            output_field = DecimalField(max_digits=10, decimal_places=2)
-            queryset = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lte=request.GET["endDate"]).aggregate(rfDay=Cast(Avg("rf_day"), output_field), totalDay=Cast(Avg("total_day"), output_field),
-                scoreProductScore=Cast(Avg("score__product_score"), output_field),
-                scoreRfDelay=Cast(Avg("score__rf_delay"), output_field),
-                scoreTodo=Cast(Avg("score__todo"), output_field),
-                scoreUnitBug=Cast(Avg("score__unit_bug"), output_field),
-                scoreTotal=Cast(Avg("score__total"), output_field),
-                scoreFinishStoryDay=Cast(Avg("score__finish_story_day"), output_field),
-                testDay=Cast(Avg("test_day"), output_field), acceptanceDay=Cast(Avg("acceptance_day"), output_field))
-            queryset = [queryset]
-            for queryset_i in queryset:
-                queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lte=request.GET["endDate"]).values("end_time", "name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story"))
-                queryset_i["info"] = queryset_info
             return Response(data=queryset)
 
         else:
