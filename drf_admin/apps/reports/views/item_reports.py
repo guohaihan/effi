@@ -5,15 +5,17 @@
 @file     : item_reports.py
 @create   : 2021/12/2 13:43
 """
-from django.db.models import Count, Avg, DecimalField
+from django.db.models import Count, Avg, DecimalField, Sum
 from rest_framework.decorators import action
-from reports.models import ItemReports, Score
+from reports.models import ItemReports, Score, Story
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter
 from reports.serializers.item_reports import ItemReportsSerializer
 from drf_admin.utils.views import AdminViewSet
 from rest_framework import status
 from django.db.models.functions import TruncMonth, TruncYear, TruncQuarter, Cast
+from datetime import datetime, timedelta
+from dateutil.relativedelta import *
 
 
 def score(data):
@@ -22,15 +24,15 @@ def score(data):
     todo_count = 0
     total_story = 0
     score_data = []
-    if not {"rf_day", "group", "storys", "bug_classs"}.issubset(data.keys()):
+    if not {"rf_day", "group", "stories", "bug_classes"}.issubset(data.keys()):
         return "研发工作日、研发组数、故事、bug分类为必传字段！"
-    if not data["group"] or not data["storys"] or not data["bug_classs"] or not data["rf_day"]:
+    if not data["group"] or not data["stories"] or not data["bug_classes"] or not data["rf_day"]:
         return "研发工作日、研发组数、故事、bug分类不能为空！"
     if not isinstance(data["group"], int):
         return "研发组数必须为整数！"
-    if not isinstance(data["rf_day"], (float, int)):
+    if not isinstance(eval(data["rf_day"]), (float, int)):
         return "研发工作日必须为数字！"
-    for story in data["storys"]:
+    for story in data["stories"]:
         if not {"assess_length", "product_delays", "develop_delays", "smoking_by"}.issubset(story.keys()):
             return "故事中缺少必填项！"
         if not isinstance(story["assess_length"], (float, int)) or not isinstance(story["product_delays"], (float, int)) or not isinstance(story["develop_delays"], (float, int)):
@@ -42,7 +44,7 @@ def score(data):
         if story["smoking_by"] == "false":
             todo_count += 1  # 冒烟不通过数量
         total_story += story["assess_length"]  # 总故事点
-    for bug in data["bug_classs"]:
+    for bug in data["bug_classes"]:
         if not {"rd", "fe"}.issubset(bug.keys()):
             return "bug分类中未填写前后端数量！"
         if not isinstance(bug["rd"], int) or not isinstance(bug["fe"], int):
@@ -65,7 +67,7 @@ def score(data):
         rf_delay = round((10-rf_date*2)/10, 2)
 
     # 计算冒烟测试通过分值
-    todo = round((len(data["storys"])-todo_count)*2/len(data["storys"]), 2)
+    todo = round((len(data["stories"])-todo_count)*2/len(data["stories"]), 2)
 
     # 计算单位bug分值
     unit_bug_i = round(total_bug/total_story, 2)
@@ -77,7 +79,7 @@ def score(data):
         unit_bug = round((10 - int(unit_bug_i))*4/10, 2)
 
     # 计算每天完成故事点
-    finish_story_day = round(total_story/(data["rf_day"]*data["group"]), 2)
+    finish_story_day = round(total_story/(eval(data["rf_day"])*data["group"]), 2)
 
     # 计算总分
     total = product_score + rf_delay + todo + unit_bug
@@ -161,17 +163,43 @@ class ItemReportsViewSet(AdminViewSet):
     @action(detail=False, methods=["get"])
     def get_reports(self, request):
         if "type" not in request.GET:
-            return Response(data={"error": "缺少类型参数，请求参数格式：type: year/quarter/year"}, status=400)
+            return Response(data={"error": "缺少类型参数，请求参数格式：type: year/quarter/month/sprint/date"}, status=400)
         if request.GET["type"] in ["year", "month", "quarter"]:
             if request.GET["type"] == "year":
-                type = TruncYear("item_reports__end_time")
+                type = TruncYear("end_time")
+                add_date = relativedelta(years=1)
             elif request.GET["type"] == "quarter":
-                type = TruncQuarter("item_reports__end_time")
+                type = TruncQuarter("end_time")
+                add_date = relativedelta(months=3)
             else:
-                type = TruncMonth("item_reports__end_time")
+                type = TruncMonth("end_time")
+                add_date = relativedelta(months=1)
+
             output_field = DecimalField(max_digits=10, decimal_places=2)
-            queryset = Score.objects.annotate(type=type).values("type").annotate(unit_bug=Cast(Avg("unit_bug"), output_field), total=Cast(Avg("total"), output_field), finish_story_day=Cast(Avg("finish_story_day"), output_field), todo=Cast(Avg("todo"), output_field), total_day=Cast(Avg("item_reports__total_day"), output_field), count=Count("id"))
+            queryset = ItemReports.objects.annotate(types=type).values("types").annotate(rf_day=Cast(Avg("rf_day"), output_field), total_day=Cast(Avg("total_day"), output_field), score__product_score=Cast(Avg("score__product_score"), output_field), score__rf_delay=Cast(Avg("score__rf_delay"), output_field), score__todo=Cast(Avg("score__todo"), output_field), score__unit_bug=Cast(Avg("score__unit_bug"), output_field), score__total=Cast(Avg("score__total"), output_field), score__finish_story_day=Cast(Avg("score__finish_story_day"), output_field), test_day=Cast(Avg("test_day"), output_field), acceptance_day=Cast(Avg("acceptance_day"), output_field))
+            for queryset_i in queryset:
+                queryset_info = ItemReports.objects.filter(end_time__gte=queryset_i["types"], end_time__lt=queryset_i["types"] + add_date).values("name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story"))
+                queryset_i["info"] = queryset_info
             return Response(data=queryset)
+        elif request.GET["type"] == "sprint":
+            queryset = ItemReports.objects.all().values("name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story")).order_by("-create_time")
+            return Response(data=queryset)
+        elif "startDate" in request.GET and "endDate" in request.GET:
+            output_field = DecimalField(max_digits=10, decimal_places=2)
+            queryset = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lte=request.GET["endDate"]).aggregate(rfDay=Cast(Avg("rf_day"), output_field), totalDay=Cast(Avg("total_day"), output_field),
+                scoreProductScore=Cast(Avg("score__product_score"), output_field),
+                scoreRfDelay=Cast(Avg("score__rf_delay"), output_field),
+                scoreTodo=Cast(Avg("score__todo"), output_field),
+                scoreUnitBug=Cast(Avg("score__unit_bug"), output_field),
+                scoreTotal=Cast(Avg("score__total"), output_field),
+                scoreFinishStoryDay=Cast(Avg("score__finish_story_day"), output_field),
+                testDay=Cast(Avg("test_day"), output_field), acceptanceDay=Cast(Avg("acceptance_day"), output_field))
+            queryset = [queryset]
+            for queryset_i in queryset:
+                queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lte=request.GET["endDate"]).values("end_time", "name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story"))
+                queryset_i["info"] = queryset_info
+            return Response(data=queryset)
+
         else:
-            return Response(data={"error": "只支持年、季度、月"}, status=400)
+            return Response(data={"error": "只支持年、季度、月、迭代"}, status=400)
 

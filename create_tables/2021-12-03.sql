@@ -31,10 +31,11 @@ CREATE TABLE `reports_bug_class` (
   `rd` int NOT NULL COMMENT '后端bug',
   `fe` int NOT NULL COMMENT '前端bug',
   `item_reports_id` int NOT NULL COMMENT '迭代报告id',
+  `acceptance` varchar(255) NOT NULL COMMENT '验收bug描述',
   PRIMARY KEY (`id`),
   UNIQUE KEY `item_reports_id` (`item_reports_id`),
   CONSTRAINT `reports_bug_class_item_reports_id_70950493_fk_reports_i` FOREIGN KEY (`item_reports_id`) REFERENCES `reports_item_reports` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=27 DEFAULT CHARSET=utf8 COMMENT='bug分类表';
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COMMENT='bug分类表';
 
 
 CREATE TABLE `reports_item_reports` (
