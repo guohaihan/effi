@@ -69,7 +69,7 @@ class Score(models.Model):
     todo = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="冒烟通过率得分")
     unit_bug = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="单位bug数")
     finish_story_day = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="每天完成的故事点")
-    total = models.DecimalField(default=False, max_digits=3, decimal_places=2, verbose_name="迭代得分")
+    total = models.DecimalField(default=False, max_digits=4, decimal_places=2, verbose_name="迭代得分")
     item_reports = models.OneToOneField("ItemReports", on_delete=models.CASCADE, verbose_name="迭代报告id")
 
     class Meta:
