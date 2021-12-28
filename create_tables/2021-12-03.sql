@@ -45,12 +45,12 @@ CREATE TABLE `reports_score` (
   `todo` decimal(3,2) NOT NULL COMMENT '冒烟通过率得分',
   `unit_bug` decimal(3,2) NOT NULL COMMENT '单位bug数',
   `finish_story_day` decimal(3,2) NOT NULL COMMENT '每天完成的故事点',
+  `total` decimal(4,2) NOT NULL,
   `item_reports_id` int NOT NULL COMMENT '迭代报告id',
-  `total` decimal(3,2) NOT NULL COMMENT '迭代得分',
   PRIMARY KEY (`id`),
   UNIQUE KEY `item_reports_id` (`item_reports_id`),
   CONSTRAINT `reports_score_item_reports_id_4045d69c_fk_reports_i` FOREIGN KEY (`item_reports_id`) REFERENCES `reports_item_reports` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8 COMMENT='分值表';
+) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COMMENT='分值表';
 
 
 CREATE TABLE `reports_story` (
