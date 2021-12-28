@@ -59,9 +59,9 @@ def counts(request):
         story_field = jira_client.issue(story_i.key).fields
         # 获取研发人员
         rd_fe_list = story_field.customfield_10306
-        rd_fe = []
+        rd_fe = ""
         if rd_fe_list:
             for rd_fe_i in rd_fe_list:
-                rd_fe.append(str(rd_fe_i))
-        my_dict["story"].append({"key": story_i.key, "summary": story_field.summary, "story_point": story_field.customfield_10106, "rd_fe": rd_fe})
+                rd_fe += ", %s" % str(rd_fe_i)
+        my_dict["story"].append({"key": story_i.key, "summary": story_field.summary, "story_point": story_field.customfield_10106, "rd_fe": rd_fe[2:]})
     return JsonResponse(my_dict)

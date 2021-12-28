@@ -31,7 +31,7 @@ def score(data):
         return "研发工作日、研发组数、故事、bug分类不能为空！"
     if not isinstance(data["group"], int):
         return "研发组数必须为整数！"
-    if not isinstance(eval(data["rf_day"]), (float, int)):
+    if not isinstance(data["rf_day"], (float, int)):
         return "研发工作日必须为数字！"
     for story in data["stories"]:
         if not {"assess_length", "product_delays", "develop_delays", "smoking_by"}.issubset(story.keys()):
@@ -80,7 +80,7 @@ def score(data):
         unit_bug = round((10 - int(unit_bug_i))*4/10, 2)
 
     # 计算每天完成故事点
-    finish_story_day = round(total_story/(eval(data["rf_day"])*data["group"]), 2)
+    finish_story_day = round(total_story/(data["rf_day"]*data["group"]), 2)
 
     # 计算总分
     total = product_score + rf_delay + todo + unit_bug
