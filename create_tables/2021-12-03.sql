@@ -40,11 +40,11 @@ CREATE TABLE `reports_bug_class` (
 
 CREATE TABLE `reports_score` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `product_score` decimal(3,2) NOT NULL COMMENT 'PM改动需求得分',
-  `rf_delay` decimal(3,2) NOT NULL COMMENT '故事交付延期得分',
-  `todo` decimal(3,2) NOT NULL COMMENT '冒烟通过率得分',
-  `unit_bug` decimal(3,2) NOT NULL COMMENT '单位bug数',
-  `finish_story_day` decimal(3,2) NOT NULL COMMENT '每天完成的故事点',
+  `product_score` decimal(4,2) NOT NULL,
+  `rf_delay` decimal(4,2) NOT NULL,
+  `todo` decimal(4,2) NOT NULL,
+  `unit_bug` decimal(4,2) NOT NULL,
+  `finish_story_day` decimal(4,2) NOT NULL,
   `total` decimal(4,2) NOT NULL,
   `item_reports_id` int NOT NULL COMMENT '迭代报告id',
   PRIMARY KEY (`id`),
