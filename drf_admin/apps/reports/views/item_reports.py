@@ -38,7 +38,7 @@ def score(data):
             return "故事中缺少必填项！"
         if not isinstance(story["assess_length"], (float, int)) or not isinstance(story["product_delays"], (float, int)) or not isinstance(story["develop_delays"], (float, int)):
             return "时长必须为数字！"
-        if story["smoking_by"] not in ["true", "false"]:
+        if not isinstance(story["smoking_by"], bool):
             return "冒烟是否通过必须使用true/false值！"
         product_date += story["product_delays"]  # 产品延期总时长
         rf_date += story["develop_delays"]  # 开发延期总时长
