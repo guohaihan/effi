@@ -47,6 +47,11 @@ class ItemReportsSerializer(MyBaseSerializer):
         (6, "家长小程序端"),
     )
     type = fields.MultipleChoiceField(choices=type_choices)
+    total_day = serializers.FloatField()
+    rf_day = serializers.FloatField()
+    test_day = serializers.FloatField()
+    acceptance_day = serializers.FloatField()
+
     stories = StorySerializer(many=True, write_only=True)
     todos = ToDoSerializer(many=True, write_only=True)
     scores = ScoreSerializer(many=True, write_only=True)
