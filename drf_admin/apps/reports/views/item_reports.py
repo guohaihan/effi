@@ -177,7 +177,7 @@ class ItemReportsViewSet(AdminViewSet):
                 scoreUnitBug=Cast(Avg("score__unit_bug"), output_field),
                 scoreTotal=Cast(Avg("score__total"), output_field),
                 scoreFinishStoryDay=Cast(Avg("score__finish_story_day"), output_field),
-                testDay=Cast(Avg("test_day"), output_field), acceptanceDay=Cast(Avg("acceptance_day"), output_field))
+                testDay=Cast(Avg("test_day"), output_field), acceptanceDay=Cast(Avg("acceptance_day"), output_field), story_count=Cast(Count("story")/Count("story__item_reports", distinct=True), output_field))
             queryset = [queryset]
             for queryset_i in queryset:
                 queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lt=request.GET["endDate"]).values("end_time", "name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story"))
@@ -198,7 +198,7 @@ class ItemReportsViewSet(AdminViewSet):
                 add_date = relativedelta(months=1)
 
             output_field = DecimalField(max_digits=10, decimal_places=2)
-            queryset = ItemReports.objects.annotate(types=type).values("types").annotate(rf_day=Cast(Avg("rf_day"), output_field), total_day=Cast(Avg("total_day"), output_field), score__product_score=Cast(Avg("score__product_score"), output_field), score__rf_delay=Cast(Avg("score__rf_delay"), output_field), score__todo=Cast(Avg("score__todo"), output_field), score__unit_bug=Cast(Avg("score__unit_bug"), output_field), score__total=Cast(Avg("score__total"), output_field), score__finish_story_day=Cast(Avg("score__finish_story_day"), output_field), test_day=Cast(Avg("test_day"), output_field), acceptance_day=Cast(Avg("acceptance_day"), output_field))
+            queryset = ItemReports.objects.annotate(types=type).values("types").annotate(rf_day=Cast(Avg("rf_day"), output_field), total_day=Cast(Avg("total_day"), output_field), score__product_score=Cast(Avg("score__product_score"), output_field), score__rf_delay=Cast(Avg("score__rf_delay"), output_field), score__todo=Cast(Avg("score__todo"), output_field), score__unit_bug=Cast(Avg("score__unit_bug"), output_field), score__total=Cast(Avg("score__total"), output_field), score__finish_story_day=Cast(Avg("score__finish_story_day"), output_field), test_day=Cast(Avg("test_day"), output_field), acceptance_day=Cast(Avg("acceptance_day"), output_field), story_count=Cast(Count("story")/Count("story__item_reports", distinct=True), output_field))
             for queryset_i in queryset:
                 queryset_info = ItemReports.objects.filter(end_time__gte=queryset_i["types"], end_time__lt=queryset_i["types"] + add_date).values("name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story"))
                 queryset_i["info"] = queryset_info
