@@ -7,14 +7,15 @@
 """
 from django.db.models import Count, Avg, DecimalField, Sum
 from rest_framework.decorators import action
-from reports.models import ItemReports, Score, Story
+from reports.models import ItemReports, Score, Story, JiraVersion
 from rest_framework.response import Response
 from rest_framework.filters import SearchFilter
 from reports.serializers.item_reports import ItemReportsSerializer
 from drf_admin.utils.views import AdminViewSet
 from rest_framework import status
 from django.db.models.functions import TruncMonth, TruncYear, TruncQuarter, Cast
-from datetime import datetime, timedelta
+from jira import JIRA
+from django.http import JsonResponse, HttpResponse
 from dateutil.relativedelta import *
 
 
@@ -97,7 +98,11 @@ def score(data):
 class ItemReportsViewSet(AdminViewSet):
     """
     get_reports:
-    报告统计--列表
+    报告统计--feature迭代
+
+    列表, status: 201(成功), return: 列表
+    get_jira_version:
+    报告统计--jira版本
 
     列表, status: 201(成功), return: 列表
     list:
@@ -165,7 +170,7 @@ class ItemReportsViewSet(AdminViewSet):
         # 支持日期搜索
         if "startDate" in request.GET and "endDate" in request.GET:
             output_field = DecimalField(max_digits=10, decimal_places=2)
-            queryset = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lte=request.GET["endDate"]).aggregate(rfDay=Cast(Avg("rf_day"), output_field), totalDay=Cast(Avg("total_day"), output_field),
+            queryset = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lt=request.GET["endDate"]).aggregate(rfDay=Cast(Avg("rf_day"), output_field), totalDay=Cast(Avg("total_day"), output_field),
                 scoreProductScore=Cast(Avg("score__product_score"), output_field),
                 scoreRfDelay=Cast(Avg("score__rf_delay"), output_field),
                 scoreTodo=Cast(Avg("score__todo"), output_field),
@@ -175,7 +180,7 @@ class ItemReportsViewSet(AdminViewSet):
                 testDay=Cast(Avg("test_day"), output_field), acceptanceDay=Cast(Avg("acceptance_day"), output_field))
             queryset = [queryset]
             for queryset_i in queryset:
-                queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lte=request.GET["endDate"]).values("end_time", "name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story"))
+                queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lt=request.GET["endDate"]).values("end_time", "name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story"))
                 queryset_i["info"] = queryset_info
             return Response(data=queryset)
 
@@ -204,4 +209,91 @@ class ItemReportsViewSet(AdminViewSet):
 
         else:
             return Response(data={"error": "只支持年、季度、月、迭代"}, status=400)
+
+    @action(detail=False, methods=["get"])
+    def get_jira_version(self, request):
+        """
+        1，先查询jira数据；
+        2，清空JiraVersion数据；
+        3，向JiraVersion插入数据；
+        4，进行年、季、月、指定时间查询；
+        """
+        server = "http://project.guoguokeji.com"
+        try:
+            jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
+        except Exception as e:
+            return HttpResponse("失败原因：%s" % e, status=400)
+        # 清空数据
+        JiraVersion.objects.all().delete()
+        jira_version = jira_client.project_versions("GZ")
+        jira_version_list = []
+        for jira_version_i in jira_version:
+            if not hasattr(jira_version_i, "name"):
+                jira_version_i.name = None
+            if not hasattr(jira_version_i, "description"):
+                jira_version_i.description = None
+            if not hasattr(jira_version_i, "releaseDate"):
+                jira_version_i.releaseDate = None
+            if not hasattr(jira_version_i, "startDate"):
+                jira_version_i.startDate = None
+            jira_version_list.append({"name": jira_version_i.name, "released": jira_version_i.released, "description": jira_version_i.description, "start_date": jira_version_i.startDate, "release_date": jira_version_i.releaseDate})
+            JiraVersion.objects.create(**jira_version_list[-1])
+
+        # 支持日期搜索
+        if "startDate" in request.GET and "endDate" in request.GET:
+            queryset = JiraVersion.objects.filter(start_date__gte=request.GET["startDate"], start_date__lt=request.GET["endDate"]).aggregate(total=Count("id"))
+            hotfix_queryset = JiraVersion.objects.filter(start_date__gte=request.GET["startDate"], start_date__lt=request.GET["endDate"], name__startswith="hotfix").count()
+            cs_queryset = JiraVersion.objects.filter(start_date__gte=request.GET["startDate"], start_date__lt=request.GET["endDate"], name__startswith="cs").count()
+            feature_queryset = JiraVersion.objects.filter(start_date__gte=request.GET["startDate"], start_date__lt=request.GET["endDate"], name__startswith="feature").count()
+            tech_queryset = JiraVersion.objects.filter(start_date__gte=request.GET["startDate"], start_date__lt=request.GET["endDate"], name__startswith="tech").count()
+            released_queryset = JiraVersion.objects.filter(start_date__gte=request.GET["startDate"], start_date__lt=request.GET["endDate"], released=1).count()
+            queryset["hotfix_total"] = hotfix_queryset
+            queryset["cs_total"] = cs_queryset
+            queryset["feature_total"] = feature_queryset
+            queryset["tech_total"] = tech_queryset
+            queryset["released_total"] = released_queryset
+
+            return Response(data=queryset)
+
+        elif "type" not in request.GET:
+            return Response(data={"error": "缺少类型参数，请求参数格式：type: year/quarter/month或startDate=&endDate="}, status=400)
+
+        if request.GET["type"] in ["year", "month", "quarter"]:
+            if request.GET["type"] == "year":
+                type = TruncYear("start_date")
+            elif request.GET["type"] == "quarter":
+                type = TruncQuarter("start_date")
+            else:
+                type = TruncMonth("start_date")
+
+            queryset = JiraVersion.objects.annotate(types=type).values("types").annotate(total=Count("id"))
+            hotfix_queryset = queryset.annotate(hotfix_total=Count("id")).filter(name__startswith="hotfix")
+            cs_queryset = queryset.annotate(cs_total=Count("id")).filter(name__startswith="cs")
+            feature_queryset = queryset.annotate(feature_total=Count("id")).filter(name__startswith="feature")
+            tech_queryset = queryset.annotate(tech_total=Count("id")).filter(name__startswith="tech")
+            released_queryset = queryset.annotate(released_total=Count("id")).filter(released=1)
+
+            for queryset_i in queryset:
+                queryset_i["hotfix_total"] = 0
+                queryset_i["cs_total"] = 0
+                queryset_i["feature_total"] = 0
+                queryset_i["tech_total"] = 0
+                queryset_i["released_total"] = 0
+                for hotfix_queryset_i in hotfix_queryset:
+                    if queryset_i["types"] == hotfix_queryset_i["types"]:
+                        queryset_i["hotfix_total"] = hotfix_queryset_i["hotfix_total"]
+                for cs_queryset_i in cs_queryset:
+                    if queryset_i["types"] == cs_queryset_i["types"]:
+                        queryset_i["cs_total"] = cs_queryset_i["cs_total"]
+                for feature_queryset_i in feature_queryset:
+                    if queryset_i["types"] == feature_queryset_i["types"]:
+                        queryset_i["feature_total"] = feature_queryset_i["feature_total"]
+                for tech_queryset_i in tech_queryset:
+                    if queryset_i["types"] == tech_queryset_i["types"]:
+                        queryset_i["tech_total"] = tech_queryset_i["tech_total"]
+                for released_queryset_i in released_queryset:
+                    if queryset_i["types"] == released_queryset_i["types"]:
+                        queryset_i["released_total"] = released_queryset_i["released_total"]
+        return Response(data=queryset)
+
 

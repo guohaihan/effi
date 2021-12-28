@@ -38,29 +38,6 @@ CREATE TABLE `reports_bug_class` (
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8 COMMENT='bug分类表';
 
 
-CREATE TABLE `reports_item_reports` (
-  `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',
-  `create_time` datetime(6) NOT NULL COMMENT '创建时间',
-  `update_time` datetime(6) NOT NULL COMMENT '更新时间',
-  `name` varchar(50) NOT NULL COMMENT '迭代名称',
-  `type` varchar(11) NOT NULL,
-  `content` varchar(200) NOT NULL COMMENT '需求内容',
-  `domain_influence` varchar(200) DEFAULT NULL COMMENT '影响域',
-  `start_time` date NOT NULL COMMENT '开始时间',
-  `end_time` date NOT NULL COMMENT '上线时间',
-  `total_day` decimal(3,1) NOT NULL COMMENT '总工作日',
-  `rf_day` decimal(3,1) NOT NULL COMMENT '研发工作日',
-  `test_day` decimal(3,1) NOT NULL COMMENT '测试工作日',
-  `acceptance_day` decimal(3,1) NOT NULL COMMENT '验收工作日',
-  `group` int NOT NULL COMMENT '研发组数',
-  `risk` varchar(255) DEFAULT NULL COMMENT '风险内容',
-  `legacy` varchar(255) DEFAULT NULL COMMENT '遗留问题',
-  `feel` longtext COMMENT '整体感受',
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `name` (`name`)
-) ENGINE=InnoDB AUTO_INCREMENT=28 DEFAULT CHARSET=utf8 COMMENT='果之迭代报告';
-
-
 CREATE TABLE `reports_score` (
   `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID',
   `product_score` decimal(3,2) NOT NULL COMMENT 'PM改动需求得分',

@@ -7,7 +7,6 @@
 """
 from jira import JIRA
 from django.http import JsonResponse, HttpResponse
-import re, time
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -34,8 +33,6 @@ def counts(request):
     server = "http://project.guoguokeji.com"
     try:
         jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
-        # jira_vesion = jira_client.project_versions("GZ")
-        # # print("jira-version", jira_vesion)
     except Exception as e:
         return HttpResponse("失败原因：%s" % e, status=400)
     jql = """project = GZ AND status in (Open, "In Progress", Reopened, Resolved, 已关闭) AND fixVersion = "%s" ORDER BY assignee ASC, key DESC, summary ASC, created DESC""" % sprint

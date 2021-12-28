@@ -93,3 +93,16 @@ class BugClass(models.Model):
         db_table = "reports_bug_class"
         verbose_name = "bug分类表"
         verbose_name_plural = verbose_name
+
+
+class JiraVersion(BaseModel):
+    name = models.CharField(blank=True, max_length=255, verbose_name="版本名称")
+    description = models.CharField(null=True, blank=True, max_length=255, verbose_name="版本描述")
+    released = models.BooleanField(blank=True, max_length=255, verbose_name="是否发布")
+    start_date = models.DateField(null=True, verbose_name="开始时间")
+    release_date = models.DateField(null=True, verbose_name="发布时间")
+
+    class Meta:
+        db_table = "reports_jira_version"
+        verbose_name = "jira版本表"
+        verbose_name_plural = verbose_name
