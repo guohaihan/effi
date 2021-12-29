@@ -6,6 +6,7 @@ __pycache__/
 drf_admin.conf
 mime.types
 uwsgi.*
+html/*
 
 # C extensions
 *.so

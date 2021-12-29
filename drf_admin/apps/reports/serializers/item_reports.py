@@ -93,9 +93,8 @@ class ItemReportsSerializer(MyBaseSerializer):
         bug_classes_data = validated_data.pop("bug_classes")
         item_report = super().update(instance, validated_data)
 
-        # 删除要更新报告之前的故事和待办
+        # # 删除要更新报告之前的故事和待办
         Story.objects.filter(item_reports=item_report).delete()
-        ToDo.objects.filter(item_reports=item_report).delete()
 
         if stories_data:
             for story_data in stories_data:
@@ -104,7 +103,7 @@ class ItemReportsSerializer(MyBaseSerializer):
         if todos_data:
             for todo_data in todos_data:
                 if "item_reports_id" in todo_data:
-                    if todo_data["item_reports_id"] and todo_data["item_reports_id"] != item_report.id:
+                    if todo_data["item_reports_id"]:
                         ToDo.objects.filter(item_reports_id=todo_data["item_reports_id"]).update(**todo_data)
                     else:
                         ToDo.objects.create(item_reports=item_report, **todo_data)
@@ -128,5 +127,5 @@ class ItemReportsSerializer(MyBaseSerializer):
         ret["todos"] = ToDo.objects.filter(item_reports=instance.id).values()
         ret["scores"] = Score.objects.filter(item_reports=instance.id).values()
         ret["bug_classes"] = BugClass.objects.filter(item_reports=instance.id).values()
-        ret["todo_unsolved"] = ToDo.objects.filter(status=False).values()  # 返回未解决的待办
+        ret["todo_unsolved"] = ToDo.objects.filter(status=False).exclude(item_reports=instance.id).values()  # 返回未解决的待办
         return ret
