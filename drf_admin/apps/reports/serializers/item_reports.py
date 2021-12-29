@@ -93,6 +93,7 @@ class ItemReportsSerializer(MyBaseSerializer):
 
         # # 删除要更新报告之前的故事和待办
         Story.objects.filter(item_reports=item_report).delete()
+        ToDo.objects.filter(item_reports=item_report).delete()
 
         if stories_data:
             for story_data in stories_data:
@@ -100,13 +101,7 @@ class ItemReportsSerializer(MyBaseSerializer):
 
         if todos_data:
             for todo_data in todos_data:
-                if "item_reports_id" in todo_data:
-                    if todo_data["item_reports_id"]:
-                        ToDo.objects.filter(item_reports_id=todo_data["item_reports_id"]).update(**todo_data)
-                    else:
-                        ToDo.objects.create(item_reports=item_report, **todo_data)
-                else:
-                    ToDo.objects.create(item_reports=item_report, **todo_data)
+                ToDo.objects.create(item_reports=item_report, **todo_data)
 
         if scores_data:
             for score_data in scores_data:
