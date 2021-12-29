@@ -17,12 +17,10 @@ class StorySerializer(serializers.ModelSerializer):
 
 
 class ToDoSerializer(serializers.ModelSerializer):
-    item_reports = serializers.CharField(required=False)
-    item_reports_id = serializers.CharField(required=False)
 
     class Meta:
         model = ToDo
-        fields = "__all__"
+        exclude = ['item_reports']
 
 
 class ScoreSerializer(serializers.ModelSerializer):
