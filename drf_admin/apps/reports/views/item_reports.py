@@ -17,6 +17,7 @@ from django.db.models.functions import TruncMonth, TruncYear, TruncQuarter, Cast
 from jira import JIRA
 from django.http import JsonResponse, HttpResponse
 from dateutil.relativedelta import *
+from django.db.models import F
 
 
 def score(data):
@@ -45,6 +46,10 @@ def score(data):
         if story["smoking_by"] == "false":
             todo_count += 1  # 冒烟不通过数量
         total_story += story["assess_length"]  # 总故事点
+    if not total_story:
+        return "评估时长不能为0"
+    if not data["rf_day"]:
+        return "研发工作日不能为0"
     for bug in data["bug_classes"]:
         if not {"rd", "fe"}.issubset(bug.keys()):
             return "bug分类中未填写前后端数量！"
@@ -173,19 +178,7 @@ class ItemReportsViewSet(AdminViewSet):
             queryset = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lt=request.GET["endDate"]).aggregate(rfDay=Cast(Avg("rf_day"), output_field), totalDay=Cast(Avg("total_day"), output_field), scoreProductScore=Cast(Avg("score__product_score"), output_field), scoreRfDelay=Cast(Avg("score__rf_delay"), output_field), scoreTodo=Cast(Avg("score__todo"), output_field), scoreUnitBug=Cast(Avg("score__unit_bug"), output_field), scoreTotal=Cast(Avg("score__total"), output_field), scoreFinishStoryDay=Cast(Avg("score__finish_story_day"), output_field), storyAssessLength=Cast(Avg("story__assess_length"), output_field), testDay=Cast(Avg("test_day"), output_field), acceptanceDay=Cast(Avg("acceptance_day"), output_field), storyCount=Cast(Count("story")/Count("story__item_reports", distinct=True), output_field))
             queryset = [queryset]
             for queryset_i in queryset:
-                queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lt=request.GET["endDate"]).values("end_time", "name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", storyCount=Count("story"))
-                # queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lt=request.GET["endDate"]).extra(select={
-                #     "rfDay": "rf_day",
-                #     "totalDay": "total_day",
-                #     # "scoreProductScore": "product_score",
-                #     "scoreRfDelay": "rf_delay",
-                #     "scoreTodo": "todo",
-                #     "scoreUnitBug": "unit_bug",
-                #     "scoreTotal": "total",
-                #     "scoreFinishStoryDay": "finish_story_day",
-                #     "testDay": "test_day",
-                #     "acceptanceDay": "acceptance_day"
-                # }).values("name", "content", "rfDay", "totalDay", "score__product_score", "scoreRfDelay", "scoreTodo", "scoreUnitBug", "scoreTotal", "scoreFinishStoryDay", "testDay", "acceptanceDay", story_count=Count("story"))
+                queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lt=request.GET["endDate"]).values("name", "content", rfDay=F("rf_day"), totalDay=F("total_day"), scoreProductScore=F("score__product_score"), scoreRfDelay=F("score__rf_delay"), scoreTodo=F("score__todo"), scoreUnitBug=F("score__unit_bug"), scoreTotal=F("score__total"), scoreFinishStoryDay=F("score__finish_story_day"), testDay=F("test_day"), acceptanceDay=F("acceptance_day"), storyCount=Count("story"))
                 queryset_i["info"] = queryset_info
             return Response(data=queryset)
 
@@ -205,35 +198,11 @@ class ItemReportsViewSet(AdminViewSet):
             output_field = DecimalField(max_digits=10, decimal_places=2)
             queryset = ItemReports.objects.annotate(types=type).values("types").annotate(rfDay=Cast(Avg("rf_day"), output_field), totalDay=Cast(Avg("total_day"), output_field), scoreProductScore=Cast(Avg("score__product_score"), output_field), scoreRfDelay=Cast(Avg("score__rf_delay"), output_field), scoreTodo=Cast(Avg("score__todo"), output_field), scoreUnitBug=Cast(Avg("score__unit_bug"), output_field), scoreTotal=Cast(Avg("score__total"), output_field), scoreFinishStoryDay=Cast(Avg("score__finish_story_day"), output_field), storyAssessLength=Cast(Avg("story__assess_length"), output_field), testDay=Cast(Avg("test_day"), output_field), acceptanceDay=Cast(Avg("acceptance_day"), output_field), storyCount=Cast(Count("story")/Count("story__item_reports", distinct=True), output_field))
             for queryset_i in queryset:
-                queryset_info = ItemReports.objects.filter(end_time__gte=queryset_i["types"], end_time__lt=queryset_i["types"] + add_date).values("name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story"))
-                # queryset_info = ItemReports.objects.filter(end_time__gte=queryset_i["types"], end_time__lt=queryset_i["types"] + add_date).extra(select={
-                #     "rfDay": "rf_day",
-                #     "totalDay": "total_day",
-                #     # "scoreProductScore": "product_score",
-                #     "scoreRfDelay": "rf_delay",
-                #     "scoreTodo": "todo",
-                #     "scoreUnitBug": "unit_bug",
-                #     "scoreTotal": "total",
-                #     "scoreFinishStoryDay": "finish_story_day",
-                #     "testDay": "test_day",
-                #     "acceptanceDay": "acceptance_day"
-                # }).values("name", "content", "rfDay", "totalDay", "score__product_score", "scoreRfDelay", "scoreTodo", "scoreUnitBug", "scoreTotal", "scoreFinishStoryDay", "testDay", "acceptanceDay", story_count=Count("story"))
+                queryset_info = ItemReports.objects.filter(end_time__gte=queryset_i["types"], end_time__lt=queryset_i["types"] + add_date).values("name", "content", rfDay=F("rf_day"), totalDay=F("total_day"), scoreProductScore=F("score__product_score"), scoreRfDelay=F("score__rf_delay"), scoreTodo=F("score__todo"), scoreUnitBug=F("score__unit_bug"), scoreTotal=F("score__total"), scoreFinishStoryDay=F("score__finish_story_day"), testDay=F("test_day"), acceptanceDay=F("acceptance_day"), storyCount=Count("story"))
                 queryset_i["info"] = queryset_info
             return Response(data=queryset)
         elif request.GET["type"] == "sprint":
-            queryset = ItemReports.objects.all().values("name", "content", "rf_day", "total_day", "score__product_score", "score__rf_delay", "score__todo", "score__unit_bug", "score__total", "score__finish_story_day", "test_day", "acceptance_day", story_count=Count("story")).order_by("-create_time")
-            # queryset = ItemReports.objects.extra(select={
-            #     "rfDay": "rf_day",
-            #     "totalDay": "total_day",
-            #     # "scoreProductScore": "product_score",
-            #     "scoreRfDelay": "rf_delay",
-            #     "scoreTodo": "todo",
-            #     "scoreUnitBug": "unit_bug",
-            #     "scoreTotal": "total",
-            #     "scoreFinishStoryDay": "finish_story_day",
-            #     "testDay": "test_day",
-            #     "acceptanceDay": "acceptance_day"
-            # }).values("name", "content", "rfDay", "totalDay", "score__product_score", "scoreRfDelay", "scoreTodo", "scoreUnitBug", "scoreTotal", "scoreFinishStoryDay", "testDay", "acceptanceDay", story_count=Count("story")).order_by("-create_time")
+            queryset = ItemReports.objects.all().values("name", "content", rfDay=F("rf_day"), totalDay=F("total_day"), scoreProductScore=F("score__product_score"), scoreRfDelay=F("score__rf_delay"), scoreTodo=F("score__todo"), scoreUnitBug=F("score__unit_bug"), scoreTotal=F("score__total"), scoreFinishStoryDay=F("score__finish_story_day"), testDay=F("test_day"), acceptanceDay=F("acceptance_day"), storyCount=Count("story")).order_by("-create_time")
             return Response(data=queryset)
 
         else:
@@ -324,5 +293,3 @@ class ItemReportsViewSet(AdminViewSet):
                     if queryset_i["types"] == released_queryset_i["types"]:
                         queryset_i["released_total"] = released_queryset_i["released_total"]
         return Response(data=queryset)
-
-
