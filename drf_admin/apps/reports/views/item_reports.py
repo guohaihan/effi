@@ -43,7 +43,7 @@ def score(data):
             return "冒烟是否通过必须使用true/false值！"
         product_date += story["product_delays"]  # 产品延期总时长
         rf_date += story["develop_delays"]  # 开发延期总时长
-        if story["smoking_by"] == "false":
+        if not story["smoking_by"]:
             todo_count += 1  # 冒烟不通过数量
         total_story += story["assess_length"]  # 总故事点
     if not total_story:
