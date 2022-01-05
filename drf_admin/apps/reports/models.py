@@ -86,6 +86,7 @@ class BugClass(models.Model):
     safety = models.IntegerField(default=False, verbose_name="安全问题")
     rd = models.IntegerField(default=False, verbose_name="后端bug")
     fe = models.IntegerField(default=False, verbose_name="前端bug")
+    total_bug = models.IntegerField(default=False, verbose_name="bug总计")
     acceptance = models.CharField(blank=True, max_length=255, verbose_name="验收bug描述")
     item_reports = models.OneToOneField("ItemReports", on_delete=models.CASCADE, verbose_name="迭代报告id")
 

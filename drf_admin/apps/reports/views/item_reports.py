@@ -5,6 +5,7 @@
 @file     : item_reports.py
 @create   : 2021/12/2 13:43
 """
+from datetime import datetime
 from django.db.models import Count, Avg, DecimalField, Sum
 from rest_framework.decorators import action
 from reports.models import ItemReports, Score, Story, JiraVersion
@@ -51,11 +52,11 @@ def score(data):
     if not data["rf_day"]:
         return "研发工作日不能为0"
     for bug in data["bug_classes"]:
-        if not {"rd", "fe"}.issubset(bug.keys()):
-            return "bug分类中未填写前后端数量！"
-        if not isinstance(bug["rd"], int) or not isinstance(bug["fe"], int):
+        if not {"total_bug"}.issubset(bug.keys()):
+            return "bug分类中未填写bug总数！"
+        if not isinstance(bug["total_bug"], int):
             return "bug数量必须为整数！"
-        total_bug = bug["rd"] + bug["fe"]  # bug数量
+        total_bug = bug["total_bug"]  # bug数量
     # 计算pm改动需求分值
     if product_date > 3:
         product_score = 0
@@ -224,21 +225,25 @@ class ItemReportsViewSet(AdminViewSet):
             jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
         except Exception as e:
             return HttpResponse("失败原因：%s" % e, status=400)
-        # 清空数据
-        JiraVersion.objects.all().delete()
-        jira_version = jira_client.project_versions("GZ")
-        jira_version_list = []
-        for jira_version_i in jira_version:
-            if not hasattr(jira_version_i, "name"):
-                jira_version_i.name = None
-            if not hasattr(jira_version_i, "description"):
-                jira_version_i.description = None
-            if not hasattr(jira_version_i, "releaseDate"):
-                jira_version_i.releaseDate = None
-            if not hasattr(jira_version_i, "startDate"):
-                jira_version_i.startDate = None
-            jira_version_list.append({"name": jira_version_i.name, "released": jira_version_i.released, "description": jira_version_i.description, "start_date": jira_version_i.startDate, "release_date": jira_version_i.releaseDate})
-            JiraVersion.objects.create(**jira_version_list[-1])
+        current_date = datetime.now().strftime('%Y-%m-%d')
+        jira_version_data = JiraVersion.objects.all()
+        if not jira_version_data:
+            if JiraVersion.objects.filter(create_time__date=current_date):
+                # 清空数据
+                JiraVersion.objects.all().delete()
+                jira_version = jira_client.project_versions("GZ")
+                jira_version_list = []
+                for jira_version_i in jira_version:
+                    if not hasattr(jira_version_i, "name"):
+                        jira_version_i.name = None
+                    if not hasattr(jira_version_i, "description"):
+                        jira_version_i.description = None
+                    if not hasattr(jira_version_i, "releaseDate"):
+                        jira_version_i.releaseDate = None
+                    if not hasattr(jira_version_i, "startDate"):
+                        jira_version_i.startDate = None
+                    jira_version_list.append({"name": jira_version_i.name, "released": jira_version_i.released, "description": jira_version_i.description, "start_date": jira_version_i.startDate, "release_date": jira_version_i.releaseDate})
+                    JiraVersion.objects.create(**jira_version_list[-1])
 
         # 支持日期搜索
         if "startDate" in request.GET and "endDate" in request.GET:
