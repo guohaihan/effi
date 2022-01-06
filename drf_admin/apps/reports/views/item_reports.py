@@ -226,24 +226,23 @@ class ItemReportsViewSet(AdminViewSet):
         except Exception as e:
             return HttpResponse("失败原因：%s" % e, status=400)
         current_date = datetime.now().strftime('%Y-%m-%d')
-        jira_version_data = JiraVersion.objects.all()
+        jira_version_data = JiraVersion.objects.filter(create_time__date=current_date)
         if not jira_version_data:
-            if JiraVersion.objects.filter(create_time__date=current_date):
-                # 清空数据
-                JiraVersion.objects.all().delete()
-                jira_version = jira_client.project_versions("GZ")
-                jira_version_list = []
-                for jira_version_i in jira_version:
-                    if not hasattr(jira_version_i, "name"):
-                        jira_version_i.name = None
-                    if not hasattr(jira_version_i, "description"):
-                        jira_version_i.description = None
-                    if not hasattr(jira_version_i, "releaseDate"):
-                        jira_version_i.releaseDate = None
-                    if not hasattr(jira_version_i, "startDate"):
-                        jira_version_i.startDate = None
-                    jira_version_list.append({"name": jira_version_i.name, "released": jira_version_i.released, "description": jira_version_i.description, "start_date": jira_version_i.startDate, "release_date": jira_version_i.releaseDate})
-                    JiraVersion.objects.create(**jira_version_list[-1])
+            # 清空数据
+            JiraVersion.objects.all().delete()
+            jira_version = jira_client.project_versions("GZ")
+            jira_version_list = []
+            for jira_version_i in jira_version:
+                if not hasattr(jira_version_i, "name"):
+                    jira_version_i.name = None
+                if not hasattr(jira_version_i, "description"):
+                    jira_version_i.description = None
+                if not hasattr(jira_version_i, "releaseDate"):
+                    jira_version_i.releaseDate = None
+                if not hasattr(jira_version_i, "startDate"):
+                    jira_version_i.startDate = None
+                jira_version_list.append({"name": jira_version_i.name, "released": jira_version_i.released, "description": jira_version_i.description, "start_date": jira_version_i.startDate, "release_date": jira_version_i.releaseDate})
+                JiraVersion.objects.create(**jira_version_list[-1])
 
         # 支持日期搜索
         if "startDate" in request.GET and "endDate" in request.GET:
