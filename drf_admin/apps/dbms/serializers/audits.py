@@ -20,12 +20,14 @@ class AuditsSerializer(MyBaseSerializer):
         model = Audits
         fields = "__all__"
 
+    # get_field:作用是自定义默认字段
     def get_db_env(self, obj):
         return obj.db.get_db_env_display()
 
     def get_db_name(self, obj):
         return obj.db.db_name
 
+    # to_representation用于序列化返回时，添加字段
     def to_representation(self, instance):
         ret = super().to_representation(instance)
         ret["excute_db_name"] = json.loads(instance.excute_db_name)

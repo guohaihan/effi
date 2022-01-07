@@ -23,7 +23,7 @@ app = Celery('admin')
 app.config_from_object('celery_tasks.config')
 
 # 加载celery任务模块
-app.autodiscover_tasks(['celery_tasks.sms', ])
+app.autodiscover_tasks(['celery_tasks.sms', 'celery_tasks.dingding'])
 
 # 启动Celery命令, (修改celery任务后必须重启celery)
 # celery -A celery_tasks.main  worker --loglevel=info

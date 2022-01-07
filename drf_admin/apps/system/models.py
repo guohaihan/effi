@@ -67,3 +67,14 @@ class Departments(BaseModel):
         verbose_name = '部门'
         verbose_name_plural = verbose_name
         ordering = ['id']
+
+
+class CommonConfig(BaseModel):
+    server = models.CharField(max_length=50, verbose_name="所属服务名称")
+    name = models.CharField(max_length=50, verbose_name='配置名称')
+    value = models.TextField(verbose_name='配置内容')
+
+    class Meta:
+        db_table = "common_config"
+        verbose_name = '配置表'
+        verbose_name_plural = verbose_name

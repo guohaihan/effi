@@ -1,0 +1,40 @@
+{
+  "name": "guozhi-efficiency-platform",
+  "version": "1.0.0",
+  "description": "```bash\r (root)\r +- src                     # Groovy 源码文件\r |   +- com\r |       +- guoguo\r |           +- Bar.groovy  # for org.foo.Bar class\r +- vars\r |   +- foo.groovy          #  全局'foo'变量\r |   +- foo.txt             # 'foo' 变量的帮助文档\r +- resources               # 资源文件 (external libraries only)\r |   +- org\r |       +- foo\r |           +- bar.json    # static helper data for org.foo.Bar\r ```",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "release": "standard-version"
+  },
+  "repository": {
+    "type": "git",
+    "url": "ssh://git@guoguokeji.com:10022/guozhi-qa/guozhi-efficiency-platform.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@commitlint/cli": "^8.3.5",
+    "@commitlint/config-conventional": "^8.3.4",
+    "cz-conventional-changelog": "^3.3.0",
+    "husky": "^4.2.5",
+    "standard-version": "^7.1.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
+  },
+  "husky": {
+    "hooks": {
+      "commit-msg": "commitlint -E HUSKY_GIT_PARAMS"
+    }
+  },
+  "dependencies": {
+    "commitizen": "^4.0.3"
+  },
+  "directories": {
+    "doc": "doc"
+  }
+}

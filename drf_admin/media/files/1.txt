@@ -1,33 +1,3 @@
-hello from hogwarts
-hello from sevenriby
-hello from testerhome
-xs0001
-xs0002ha和
-xs0003
-xs0004
-xs0006
-xs0007
-0001
-0002
-0003
-0004
-0005
-0006
-0007
-0008
-0009
-00010
-00011
-123456789
-yuepu001
-yuexin001
-yuexin002
-5827001
-20180225
-1333111
-st1091
-123412
-10103
-10104
-10105
-10106
+delete FROM uums_notice WHERE type=3;
+dlete FROM uums_notice_user where module_type=3;
+select * from uums_notice;

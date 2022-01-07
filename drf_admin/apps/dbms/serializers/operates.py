@@ -48,5 +48,5 @@ class OperateLogsSerializer(MyBaseSerializer):
     operate_sql = serializers.CharField()
     performer = serializers.CharField(max_length=20)
     status = serializers.IntegerField()
-    error_info = serializers.CharField(max_length=255, allow_blank=True)
+    error_info = serializers.CharField(allow_blank=True)
     sprint = serializers.CharField(max_length=50, default=None, allow_blank=True, allow_null=True)
