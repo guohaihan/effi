@@ -65,3 +65,4 @@ def counts(request):
                 rd_fe += ", %s" % str(rd_fe_i)
         my_dict["story"].append({"key": story_i.key, "summary": story_field.summary, "story_point": story_field.customfield_10106, "rd_fe": rd_fe[2:]})
     return JsonResponse(my_dict)
+
