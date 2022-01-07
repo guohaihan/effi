@@ -86,7 +86,8 @@ def score(data):
         unit_bug = round((10 - int(unit_bug_i))*4/10, 2)
 
     # 计算每天完成故事点
-    finish_story_day = round(total_story/(data["rf_day"]*data["group"]), 2)
+    # finish_story_day = round(total_story/(data["rf_day"]*data["group"]), 2)
+    finish_story_day = round(total_story/data["rf_day"], 2)
 
     # 计算总分
     total = product_score + rf_delay + todo + unit_bug
