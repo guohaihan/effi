@@ -6,6 +6,7 @@
 @create   : 2021/12/2 13:43
 """
 from datetime import datetime
+from django.db import transaction
 from django.db.models import Count, Avg, DecimalField, Sum
 from rest_framework.decorators import action
 from reports.models import ItemReports, Score, Story, JiraVersion
@@ -214,6 +215,7 @@ class ItemReportsViewSet(AdminViewSet):
             return Response(data={"error": "只支持年、季度、月、迭代"}, status=400)
 
     @action(detail=False, methods=["get"])
+    @transaction.atomic
     def get_jira_version(self, request):
         """
         1，先查询jira数据；
@@ -221,16 +223,17 @@ class ItemReportsViewSet(AdminViewSet):
         3，向JiraVersion插入数据；
         4，进行年、季、月、指定时间查询；
         """
-        server = "http://project.guoguokeji.com"
-        try:
-            jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
-        except Exception as e:
-            return HttpResponse("失败原因：%s" % e, status=400)
         current_date = datetime.now().strftime('%Y-%m-%d')
         jira_version_data = JiraVersion.objects.filter(create_time__date=current_date)
         if not jira_version_data:
             # 清空数据
             JiraVersion.objects.all().delete()
+            server = "http://project.guoguokeji.com"
+            try:
+                jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
+            except Exception as e:
+                return HttpResponse("失败原因：%s" % e, status=400)
+
             jira_version = jira_client.project_versions("GZ")
             jira_version_list = []
             for jira_version_i in jira_version:
@@ -244,7 +247,7 @@ class ItemReportsViewSet(AdminViewSet):
                     if not hasattr(jira_version_i, "startDate"):
                         jira_version_i.startDate = None
                     jira_version_list.append({"name": jira_version_i.name, "released": jira_version_i.released, "description": jira_version_i.description, "start_date": jira_version_i.startDate, "release_date": jira_version_i.releaseDate})
-                    JiraVersion.objects.create(**jira_version_list[-1])
+                    JiraVersion.objects.update_or_create(**jira_version_list[-1])
 
         # 支持日期搜索
         if "startDate" in request.GET and "endDate" in request.GET:
