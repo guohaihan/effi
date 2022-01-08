@@ -6,7 +6,6 @@
 @create   : 2021/12/2 13:43
 """
 from datetime import datetime
-from django.db import transaction
 from django.db.models import Count, Avg, DecimalField, Sum
 from rest_framework.decorators import action
 from reports.models import ItemReports, Score, Story, JiraVersion
@@ -215,7 +214,6 @@ class ItemReportsViewSet(AdminViewSet):
             return Response(data={"error": "只支持年、季度、月、迭代"}, status=400)
 
     @action(detail=False, methods=["get"])
-    @transaction.atomic
     def get_jira_version(self, request):
         """
         1，先查询jira数据；
