@@ -226,7 +226,7 @@ class ItemReportsViewSet(AdminViewSet):
         if not jira_version_data:
             # 清空数据
             JiraVersion.objects.all().delete()
-            server = "http://project.guoguokeji.com"
+            server = "http://192.168.1.203:8080"
             try:
                 jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
             except Exception as e:
