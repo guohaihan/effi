@@ -86,7 +86,8 @@ def score(data):
         unit_bug = round((10 - int(unit_bug_i))*4/10, 2)
 
     # 计算每天完成故事点
-    finish_story_day = round(total_story/(data["rf_day"]*data["group"]), 2)
+    # finish_story_day = round(total_story/(data["rf_day"]*data["group"]), 2)
+    finish_story_day = round(total_story/data["rf_day"], 2)
 
     # 计算总分
     total = product_score + rf_delay + todo + unit_bug
@@ -140,7 +141,7 @@ class ItemReportsViewSet(AdminViewSet):
 
     信息, status: 201(成功), return: null
     """
-    queryset = ItemReports.objects.order_by("-update_time")
+    queryset = ItemReports.objects.order_by("-name")
     serializer_class = ItemReportsSerializer
     # 自定义过滤字段
     filter_backends = [SearchFilter]
@@ -178,10 +179,10 @@ class ItemReportsViewSet(AdminViewSet):
             output_field = DecimalField(max_digits=10, decimal_places=2)
             queryset = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lt=request.GET["endDate"]).aggregate(rfDay=Cast(Avg("rf_day"), output_field), totalDay=Cast(Avg("total_day"), output_field), scoreProductScore=Cast(Avg("score__product_score"), output_field), scoreRfDelay=Cast(Avg("score__rf_delay"), output_field), scoreTodo=Cast(Avg("score__todo"), output_field), scoreUnitBug=Cast(Avg("score__unit_bug"), output_field), scoreTotal=Cast(Avg("score__total"), output_field), scoreFinishStoryDay=Cast(Avg("score__finish_story_day"), output_field), testDay=Cast(Avg("test_day"), output_field), acceptanceDay=Cast(Avg("acceptance_day"), output_field))
             queryset.update(ItemReports.objects.filter(end_time__gte=request.GET["startDate"],
-                                                  end_time__lt=request.GET["endDate"]).aggregate(storyCount=Cast(Count("story")/Count("story__item_reports", distinct=True), output_field)))
+                                                  end_time__lt=request.GET["endDate"]).aggregate(storyCount=Cast(Count("story")/Count("story__item_reports", distinct=True), output_field), storyAssessLength=Cast(Sum("story__assess_length")/Count("story__item_reports", distinct=True), output_field)))
             queryset = [queryset]
             for queryset_i in queryset:
-                queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lt=request.GET["endDate"]).values("name", "content", rfDay=F("rf_day"), totalDay=F("total_day"), scoreProductScore=F("score__product_score"), scoreRfDelay=F("score__rf_delay"), scoreTodo=F("score__todo"), scoreUnitBug=F("score__unit_bug"), scoreTotal=F("score__total"), scoreFinishStoryDay=F("score__finish_story_day"), testDay=F("test_day"), acceptanceDay=F("acceptance_day"), storyCount=Count("story"))
+                queryset_info = ItemReports.objects.filter(end_time__gte=request.GET["startDate"], end_time__lt=request.GET["endDate"]).values("name", "content", rfDay=F("rf_day"), totalDay=F("total_day"), scoreProductScore=F("score__product_score"), scoreRfDelay=F("score__rf_delay"), scoreTodo=F("score__todo"), scoreUnitBug=F("score__unit_bug"), scoreTotal=F("score__total"), scoreFinishStoryDay=F("score__finish_story_day"), testDay=F("test_day"), acceptanceDay=F("acceptance_day"), storyCount=Count("story"), storyAssessLength=Sum("story__assess_length")).order_by("-name")
                 queryset_i["info"] = queryset_info
             return Response(data=queryset)
 
@@ -201,12 +202,12 @@ class ItemReportsViewSet(AdminViewSet):
             output_field = DecimalField(max_digits=10, decimal_places=2)
             queryset = ItemReports.objects.annotate(types=type).values("types").annotate(rfDay=Cast(Avg("rf_day"), output_field), totalDay=Cast(Avg("total_day"), output_field), scoreProductScore=Cast(Avg("score__product_score"), output_field), scoreRfDelay=Cast(Avg("score__rf_delay"), output_field), scoreTodo=Cast(Avg("score__todo"), output_field), scoreUnitBug=Cast(Avg("score__unit_bug"), output_field), scoreTotal=Cast(Avg("score__total"), output_field), scoreFinishStoryDay=Cast(Avg("score__finish_story_day"), output_field), testDay=Cast(Avg("test_day"), output_field), acceptanceDay=Cast(Avg("acceptance_day"), output_field))
             for queryset_i in queryset:
-                queryset_i.update(ItemReports.objects.filter(end_time__gte=queryset_i["types"], end_time__lt=queryset_i["types"] + add_date).aggregate(storyCount=Cast(Count("story")/Count("story__item_reports", distinct=True), output_field)))
-                queryset_info = ItemReports.objects.filter(end_time__gte=queryset_i["types"], end_time__lt=queryset_i["types"] + add_date).values("name", "content", rfDay=F("rf_day"), totalDay=F("total_day"), scoreProductScore=F("score__product_score"), scoreRfDelay=F("score__rf_delay"), scoreTodo=F("score__todo"), scoreUnitBug=F("score__unit_bug"), scoreTotal=F("score__total"), scoreFinishStoryDay=F("score__finish_story_day"), testDay=F("test_day"), acceptanceDay=F("acceptance_day"), storyCount=Count("story"))
+                queryset_i.update(ItemReports.objects.filter(end_time__gte=queryset_i["types"], end_time__lt=queryset_i["types"] + add_date).aggregate(storyCount=Cast(Count("story")/Count("story__item_reports", distinct=True), output_field), storyAssessLength=Cast(Sum("story__assess_length")/Count("story__item_reports", distinct=True), output_field)))
+                queryset_info = ItemReports.objects.filter(end_time__gte=queryset_i["types"], end_time__lt=queryset_i["types"] + add_date).values("name", "content", rfDay=F("rf_day"), totalDay=F("total_day"), scoreProductScore=F("score__product_score"), scoreRfDelay=F("score__rf_delay"), scoreTodo=F("score__todo"), scoreUnitBug=F("score__unit_bug"), scoreTotal=F("score__total"), scoreFinishStoryDay=F("score__finish_story_day"), testDay=F("test_day"), acceptanceDay=F("acceptance_day"), storyCount=Count("story"), storyAssessLength=Sum("story__assess_length")).order_by("-name")
                 queryset_i["info"] = queryset_info
             return Response(data=queryset)
         elif request.GET["type"] == "sprint":
-            queryset = ItemReports.objects.all().values("name", "content", rfDay=F("rf_day"), totalDay=F("total_day"), scoreProductScore=F("score__product_score"), scoreRfDelay=F("score__rf_delay"), scoreTodo=F("score__todo"), scoreUnitBug=F("score__unit_bug"), scoreTotal=F("score__total"), scoreFinishStoryDay=F("score__finish_story_day"), testDay=F("test_day"), acceptanceDay=F("acceptance_day"), storyCount=Count("story")).order_by("-create_time")
+            queryset = ItemReports.objects.all().values("name", "content", rfDay=F("rf_day"), totalDay=F("total_day"), scoreProductScore=F("score__product_score"), scoreRfDelay=F("score__rf_delay"), scoreTodo=F("score__todo"), scoreUnitBug=F("score__unit_bug"), scoreTotal=F("score__total"), scoreFinishStoryDay=F("score__finish_story_day"), testDay=F("test_day"), acceptanceDay=F("acceptance_day"), storyCount=Count("story"), storyAssessLength=Sum("story__assess_length")).order_by("-name")
             return Response(data=queryset)
 
         else:
@@ -220,29 +221,31 @@ class ItemReportsViewSet(AdminViewSet):
         3，向JiraVersion插入数据；
         4，进行年、季、月、指定时间查询；
         """
-        server = "http://project.guoguokeji.com"
-        try:
-            jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
-        except Exception as e:
-            return HttpResponse("失败原因：%s" % e, status=400)
         current_date = datetime.now().strftime('%Y-%m-%d')
         jira_version_data = JiraVersion.objects.filter(create_time__date=current_date)
         if not jira_version_data:
             # 清空数据
             JiraVersion.objects.all().delete()
+            server = "http://192.168.1.203:8080"
+            try:
+                jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
+            except Exception as e:
+                return HttpResponse("失败原因：%s" % e, status=400)
+
             jira_version = jira_client.project_versions("GZ")
             jira_version_list = []
             for jira_version_i in jira_version:
-                if not hasattr(jira_version_i, "name"):
-                    jira_version_i.name = None
-                if not hasattr(jira_version_i, "description"):
-                    jira_version_i.description = None
-                if not hasattr(jira_version_i, "releaseDate"):
-                    jira_version_i.releaseDate = None
-                if not hasattr(jira_version_i, "startDate"):
-                    jira_version_i.startDate = None
-                jira_version_list.append({"name": jira_version_i.name, "released": jira_version_i.released, "description": jira_version_i.description, "start_date": jira_version_i.startDate, "release_date": jira_version_i.releaseDate})
-                JiraVersion.objects.create(**jira_version_list[-1])
+                if jira_version_i.released:
+                    if not hasattr(jira_version_i, "name"):
+                        jira_version_i.name = None
+                    if not hasattr(jira_version_i, "description"):
+                        jira_version_i.description = None
+                    if not hasattr(jira_version_i, "releaseDate"):
+                        jira_version_i.releaseDate = None
+                    if not hasattr(jira_version_i, "startDate"):
+                        jira_version_i.startDate = None
+                    jira_version_list.append({"name": jira_version_i.name, "released": jira_version_i.released, "description": jira_version_i.description, "start_date": jira_version_i.startDate, "release_date": jira_version_i.releaseDate})
+                    JiraVersion.objects.update_or_create(**jira_version_list[-1])
 
         # 支持日期搜索
         if "startDate" in request.GET and "endDate" in request.GET:

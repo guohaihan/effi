@@ -30,7 +30,7 @@ def counts(request):
     sprint = request.GET.get("sprint")
     if not sprint:
         return HttpResponse("sprint必填，格式?sprint=", status=400)
-    server = "http://project.guoguokeji.com"
+    server = "http://192.168.1.203:8080"
     try:
         jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
     except Exception as e:
@@ -65,3 +65,4 @@ def counts(request):
                 rd_fe += ", %s" % str(rd_fe_i)
         my_dict["story"].append({"key": story_i.key, "summary": story_field.summary, "story_point": story_field.customfield_10106, "rd_fe": rd_fe[2:]})
     return JsonResponse(my_dict)
+
