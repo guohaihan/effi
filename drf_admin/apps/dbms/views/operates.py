@@ -159,17 +159,17 @@ class MysqlList(object):
         if isinstance(sql, str):
             sql = [sql]  # 如果只有一条sql，将sql放入列表
         for sql_i in sql:
-            sql_i = sql_i.lower().replace("\n", " ").strip()
-            if sql_i.startswith("select"):
+            sql_i_low = sql_i.lower().replace("\n", " ").strip()
+            if sql_i_low.startswith("select"):
                 # 判断有无limit，不存在时，添加limit
                 result = re.search(r'.* limit [0-9]+;', sql_i, re.DOTALL|re.I)
                 if not result:
                     sql_i = sql_i.replace(";", " limit %d;" % limit)
             try:
                 row_count = cur.execute(sql_i)
-                if sql_i.startswith("alter") or sql_i.startswith("update"):
+                if sql_i_low.startswith("alter") or sql_i_low.startswith("update"):
                     info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count})
-                elif sql_i.startswith("select"):
+                elif sql_i_low.startswith("select"):
                     res = cur.fetchall()  # 获取执行的返回结果
                     if res:
                         for key_i in list(res[0].keys()):
@@ -180,7 +180,7 @@ class MysqlList(object):
                                 for res_i in res:
                                     res_i[key_i] = "*"
                     info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count, "data": res})
-                elif sql_i.startswith("show"):
+                elif sql_i_low.startswith("show"):
                     res = cur.fetchall()  # 获取执行的返回结果
                     info.append({"sql": sql_i, "message": "OK，影响行数：%d" % row_count, "data": res})
                 else:
