@@ -5,7 +5,6 @@
 @file     : sqlscript.py
 @create   : 2020/7/1 22:37 
 """
-from drf_yasg.utils import swagger_auto_schema
 from rest_framework import status, serializers
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response

@@ -324,12 +324,17 @@ class DatabasesView(APIView):
         else:
             database_name = eval(request.data["excute_db_name"])
         sql_data = request.data["operate_sql"]
-        if ("select " in sql_data or "show " in sql_data) and len(database_name) > 1:
-            return Response(status=400, data={"error": "不能同时查询多个数据库！"})
+        # if ("select " in sql_data or "show " in sql_data) and len(database_name) > 1:
+        #     return Response(status=400, data={"error": "不能同时查询多个数据库！"})
         pattern = re.compile(r'.*?;', re.DOTALL)
         result = pattern.findall(sql_data)
         if not result:
             return Response(status=400, data={"error": "sql缺少';'号！"})
+        if len(database_name) > 1:
+            for result_i in result:
+                result_low_i = result_i.lower().replace("\n", " ").strip()
+                if result_low_i.startswith("select") or result_low_i.startswith("show"):
+                    return Response(status=400, data={"error": "不能同时查询多个数据库！"})
         sprint = None
         if "sprint" in request.data:
             sprint = request.data["sprint"]
