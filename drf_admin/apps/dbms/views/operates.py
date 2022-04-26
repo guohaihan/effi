@@ -72,8 +72,8 @@ class MysqlList(object):
         if isinstance(sql, str):
             sql = [sql]  # 如果只有一条sql，将sql放入列表
         for i in range(len(sql)):
-            sql[i] = sql[i].lower().replace("\n", " ").strip()
-            if sql[i].startswith("select"):
+            sql_low_i = sql[i].lower().replace("\n", " ").strip()
+            if sql_low_i.startswith("select"):
                 # 查询语句没有*时
                 result = re.search(r'select (.*?) from', sql[i], re.DOTALL | re.I)
                 if not result:
@@ -344,11 +344,12 @@ class DatabasesView(APIView):
             error_info = ""
             obj = MysqlList(base_data["host"], base_data["user"], base_data["passwd"], base_data["port"],
                             database_name_i)
-            # 执行sql操作
-            if db_env:
-                sql_info = obj.execute_sql(result, db_env=db_env)  # 非生产环境时，不进行脱敏
-            else:
-                sql_info = obj.desen(result)  # 生产环境时，进行脱敏操作
+            sql_info = obj.execute_sql(result, db_env=db_env)
+            # # 执行sql操作，需要进行脱敏设置时，启用
+            # if db_env:
+            #     sql_info = obj.execute_sql(result, db_env=db_env)  # 非生产环境时，不进行脱敏
+            # else:
+            #     sql_info = obj.desen(result)  # 生产环境时，进行脱敏操作
             if "FAIL" in sql_info[-1]["message"]:
                 status = 0
                 error_info = "失败sql：" + sql_info[-1]["sql"] + "\n" + sql_info[-1]["message"]
