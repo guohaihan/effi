@@ -88,7 +88,12 @@ def send_dingding_msg(access_token, msgtype, text):
     elif msgtype == "actionCard":  # 卡片消息
         data = {
             "msgtype": msgtype,
-            "actionCard": text
+            "actionCard": {
+                "title": text["title"],
+                "text": text["text"],
+                "singleTitle": text["singleTitle"],
+                "singleURL": text["singleURL"]
+            }
         }
     else:
         data = {
@@ -97,9 +102,11 @@ def send_dingding_msg(access_token, msgtype, text):
         }
     try:
         response = requests.post(url=webhook, data=json.dumps(data), headers=headers)
-        if response.status_code.startswith("2"):
-            logging.getLogger("info").info("钉钉消息发送成功：%s" % data["text"]["content"])
-        else:
-            logging.getLogger("error").error("钉钉消息发送失败：%s，失败原因:%s" % (data["text"]["content"], response.content))
     except Exception as e:
-        logging.getLogger("error").error("钉钉消息发送失败：%s，失败原因:%s" % (data["text"]["content"], e))
+        logging.getLogger("error").error("钉钉消息发送失败：%s，失败原因:%s" % (text, e))
+    else:
+        if str(response.status_code).startswith("2"):
+            logging.getLogger("info").info("钉钉消息发送成功：%s" % text)
+        else:
+            logging.getLogger("error").error("钉钉消息发送失败：%s，失败原因:%s" % (text, response.content))
+

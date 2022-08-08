@@ -10,8 +10,9 @@ urlpatterns += [
     # path("sqlscript/sql_script/<pk>/", sqlscript.SqlscriptGenericAPIView.as_view()),
     # path("sqlscript/sql_operate/<pk>/", sqlscript.SqlscriptOperateGenericView.as_view()),
     path("operates/excel/", operates.export_excel),  # 数据查询结果导出
-    path("operates/databases/", operates.DatabasesView.as_view()),  # 获取数据库
-    path("operates/databases/<pk>/", operates.DatabasesView.as_view()),  # 执行sql
+    path("operates/check/", operates.check),  # 进行sql检查
+    path("operates/databases/", operates.DatabasesView.as_view()),  # 执行sql
+    path("operates/databases/<pk>/", operates.DatabasesView.as_view()),  # 查询数据库
     path("operates/logs/", operates.OperateLogsView.as_view()),  # 操作日志
     path("operates/logs/<pk>/", operates.OperateLogsPkView.as_view()),  # 查看操作日志详情
     path("db/type/", db.DBTypeAPIView.as_view()),

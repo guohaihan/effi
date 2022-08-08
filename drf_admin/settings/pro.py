@@ -101,7 +101,7 @@ CORS_ORIGIN_WHITELIST = (
     'http://localhost:9527',
     'http://127.0.0.1',
     'http://localhost',
-    'http://192.168.1.55:9527',
+    'http://192.168.1.17:9527',
     'http://192.168.31.100:9527',
 )
 # 允许携带cookie

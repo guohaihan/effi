@@ -30,7 +30,7 @@ class OperateLogs(models.Model):
     performer = models.CharField(max_length=20, verbose_name="执行者")
     create_time = models.DateTimeField(auto_now_add=True, verbose_name="创建时间")
     status = models.IntegerField(choices=((0, '失败'), (1, '成功')), verbose_name='执行状态', default=1)
-    error_info = models.TextField(default=None, verbose_name="message")
+    error_info = models.TextField(default=None, null=True, verbose_name="错误信息")
     sprint = models.CharField(max_length=50, default=None, verbose_name="分支", blank=True, null=True)
 
     class Meta:
@@ -81,7 +81,7 @@ class Audits(BaseModel):
         (2, "审核驳回")
     )
     db = models.ForeignKey(DBServerConfig, on_delete=models.CASCADE, verbose_name="关联数据库id")
-    excute_db_name = models.TextField(verbose_name="要执行的数据库名")
+    execute_db_name = models.TextField(verbose_name="要执行的数据库名")
     operate_sql = models.TextField(verbose_name="要执行的sql")
     user = models.CharField(max_length=20, verbose_name="申请人")
     auditor = models.CharField(max_length=20, default=None, verbose_name="审核人", blank=True, null=True)
@@ -92,4 +92,22 @@ class Audits(BaseModel):
     class Meta:
         db_table = "dbms_audits"
         verbose_name = "sql审核表"
+        verbose_name_plural = verbose_name
+
+
+class CheckContent(BaseModel):
+    """
+    存放各个SQL上线工单的SQL|审核|执行内容
+    """
+    status_choice = (
+        (0, "失败"),
+        (1, "成功")
+    )
+    sql_content = models.TextField("具体sql内容")
+    status = models.IntegerField(choices=status_choice, default=0, verbose_name="检查结果")
+
+    class Meta:
+        managed = True
+        db_table = "dbms_check_content"
+        verbose_name = "sql检查表"
         verbose_name_plural = verbose_name

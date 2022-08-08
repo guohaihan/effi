@@ -30,5 +30,5 @@ class AuditsSerializer(MyBaseSerializer):
     # to_representation用于序列化返回时，添加字段
     def to_representation(self, instance):
         ret = super().to_representation(instance)
-        ret["excute_db_name"] = json.loads(instance.excute_db_name)
+        ret["execute_db_name"] = json.loads(instance.execute_db_name)
         return ret

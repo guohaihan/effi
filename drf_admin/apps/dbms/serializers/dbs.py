@@ -42,7 +42,7 @@ class DBServerConfigSerializer(serializers.ModelSerializer):
             if instance.db_password == validated_data["db_password"]:
                 instance.db_password = instance.get_password_display('db_password')
             else:
-                instance.db_password = validated_data.get('db_password',instance.db_password)
+                instance.db_password = validated_data.get('db_password', instance.db_password)
         # instance.client_name = validated_data.get('client_name', instance.client_name)
         instance.db_env = validated_data.get('db_env', instance.db_env)
         instance.db_ip = validated_data.get('db_ip', instance.db_ip)
