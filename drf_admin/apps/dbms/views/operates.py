@@ -22,38 +22,26 @@ from django.http import HttpResponse
 from openpyxl import Workbook
 from dbms.engines.mysql import MysqlEngine
 import os, json, re
-from django_redis import get_redis_connection
 
 
-@require_POST
-@csrf_exempt
-@api_view(["POST"])
-def check(request):
+def check(data):
     """
-    post:
     检查提交sql；
-
-    请求体：
-    {db: 数据库id, execute_db_name:执行数据名, operate_sql：sql语句}
     """
-    if ["db", "execute_db_name", "operate_sql"].sort() != list(request.data.keys()).sort():
-        return Response(status=400, data={"error": "请求参数缺失！"})
-    if not request.data["db"] or not request.data["execute_db_name"] or not request.data["operate_sql"]:
-        return Response(status=400, data={"error": "参数不能为空！"})
-    db = request.data.get("db")
+    db = data["db"]
     # db_name是list，检查时，检查一个库即可
-    db_name = request.data.get("execute_db_name")[0]
-    sql = request.data.get("operate_sql")
+    db_name = data["execute_db_name"][0]
+    sql = data["operate_sql"]
     # 调用goInception中检查方法
     result = GoInceptionEngine.check(db, db_name, sql)
     if "error" in result:
-        return Response(status=400, data={"error": result["error"]})
+        return result
     # 将检查结果放入数据库
     if result["errorCount"] > 0:
         CheckContent.objects.create(sql_content=sql, status=0)
     else:
         CheckContent.objects.create(sql_content=sql, status=1)
-    return Response(result)
+    return result
 
 
 class DatabasesView(APIView):
@@ -97,11 +85,16 @@ class DatabasesView(APIView):
         base_data = obj.basic_info()
         if "error" in base_data:
             return Response(status=400, data={"error": base_data["error"]})
-        # 获取当前数据库的环境类型
-        db_env = DBServerConfig.objects.filter(id=db).values()[0]["db_env"]
+        # 查看sql检查状态
         check_status = CheckContent.objects.filter(sql_content=sql, status=1).values()
-        if db_env == 0 and check_status:
-            return Response(status=400, data={"error": "生产数据库需审核后执行"})
+        if not check_status:
+            # 检查sql是否验证通过
+            result = check(request.data)
+            if "error" in result:
+                return Response(status=400, data={"error": result["error"]})
+            # result["errorCount"] > 0代表存在异常sql
+            if result["errorCount"] > 0:
+                return Response(status=400, data={"error": result})
 
         # 循环调用goInception中执行方法，操作多个数据库
         for db_name in db_names:
@@ -112,7 +105,7 @@ class DatabasesView(APIView):
             result["sql"] = sql
             if "error" in result:
                 return Response(status=400, data={"error": result["error"]})
-            # 将检查结果放入数据库
+            # 将执行结果放入数据库
             if result["errorCount"] > 0:
                 result["status"] = 0
                 for data in result["rows"]:
@@ -199,7 +192,7 @@ class AuditsViewSet(AdminViewSet):
 
     审核信息, status: 201(成功), return: 审核数据信息
     multiple_update:
-    审核--批量更新，支持局部
+    审核--批量更新，支持局部（目前已废弃）
 
     审核信息, status: 201(成功), return: 更新后数据信息
     multiple_delete:
@@ -219,14 +212,15 @@ class AuditsViewSet(AdminViewSet):
     search_fields = ("sprint",)
 
     def create(self, request, *args, **kwargs):
-        if "execute_db_name" in request.data:
-            request.data["execute_db_name"] = json.dumps(request.data["execute_db_name"])
         user = request.user.get_username()
         request.data["user"] = user
         # 检查sql是否验证通过
-        result = CheckContent.objects.filter(sql_content=request.data["operate_sql"], status=1).values()
-        if not result:
-            return Response(status=400, data={"error": "没有验证通过的语句不可以提交审核！"})
+        result = check(request.data)
+        if "error" in result:
+            return Response(status=400, data={"error": result["error"]})
+        if result["errorCount"] > 0:
+            return Response(status=400, data={"error": result})
+        request.data["execute_db_name"] = json.dumps(request.data["execute_db_name"])
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)

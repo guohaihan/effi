@@ -97,7 +97,7 @@ class Audits(BaseModel):
 
 class CheckContent(BaseModel):
     """
-    存放各个SQL上线工单的SQL|审核|执行内容
+    存放各个SQL上线工单的SQL检查结果
     """
     status_choice = (
         (0, "失败"),

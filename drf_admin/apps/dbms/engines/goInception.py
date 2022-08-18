@@ -14,9 +14,9 @@ class GoInceptionEngine(object):
     @staticmethod
     def get_connection():
         try:
-            conn = pymysql.connect(host='127.0.0.1', user='', passwd='', db='', port=4000, charset="utf8mb4")
+            conn = pymysql.connect(host='0.0.0.0', user='', passwd='', db='', port=4000, charset="utf8mb4")
         except Exception as e:
-            return {"error": "连接数据库失败！失败原因：%s" % e}
+            return {"error": "goInception连接数据库失败！失败原因：%s" % e}
         return conn
 
     @staticmethod

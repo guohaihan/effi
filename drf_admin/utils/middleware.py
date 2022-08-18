@@ -57,7 +57,7 @@ class OperationLogMiddleware:
         if response.status_code >= 500:
             logger.error(log_info)
         elif response.status_code >= 400:
-            logger.warning(log_info)
+            logger.error(log_info)
         else:
             logger.info(log_info)
         return response
