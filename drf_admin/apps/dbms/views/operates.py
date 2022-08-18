@@ -34,11 +34,9 @@ def check(request):
     检查提交sql；
 
     请求体：
-    {db: 数据库id,
-    execute_db_name:执行数据名
-    operate_sql：sql语句}
+    {db: 数据库id, execute_db_name:执行数据名, operate_sql：sql语句}
     """
-    if "db" not in request.data or "execute_db_name" not in request.data or "operate_sql" not in request.data:
+    if ["db", "execute_db_name", "operate_sql"].sort() != list(request.data.keys()).sort():
         return Response(status=400, data={"error": "请求参数缺失！"})
     if not request.data["db"] or not request.data["execute_db_name"] or not request.data["operate_sql"]:
         return Response(status=400, data={"error": "参数不能为空！"})
@@ -61,7 +59,7 @@ def check(request):
 class DatabasesView(APIView):
     """
     get:
-    数据库操作--连接数据库
+    数据库操作--获取全部数据库
 
     获取信息详情, status: 201(成功), return: 数据库表
     post:
@@ -69,17 +67,6 @@ class DatabasesView(APIView):
 
     获取信息详情, status: 201(成功), return: 执行结果
     """
-    @swagger_auto_schema(responses={200: openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        title="db_info",
-        properties={
-            "Database": openapi.Schema(
-                title="Database",
-                type=openapi.TYPE_STRING,
-            ),
-        },
-        required=["Database"]
-    )})
     def get(self, request, pk):
         """获取所有数据库"""
         obj = MysqlEngine(pk)
@@ -96,20 +83,9 @@ class DatabasesView(APIView):
                     all_db_list.remove(all_db_i)
         return Response(all_db_list)
 
-    @swagger_auto_schema(responses={200: openapi.Schema(
-        type=openapi.TYPE_OBJECT,
-        title="请求体",
-        properties={
-            "data": openapi.Schema(
-                title="此请求体用审核通过后的响应data，格式为{'data': data}",
-                type=openapi.TYPE_STRING,
-            ),
-        },
-        required=["请求体"]
-    )})
     def post(self, request):
         """执行sql，并记录到日志"""
-        if "db" not in request.data or "execute_db_name" not in request.data or "operate_sql" not in request.data:
+        if ["db", "execute_db_name", "operate_sql"].sort() != list(request.data.keys()).sort():
             return Response(status=400, data={"error": "请求参数缺失！"})
         if not request.data["db"] or not request.data["execute_db_name"] or not request.data["operate_sql"]:
             return Response(status=400, data={"error": "参数不能为空！"})
