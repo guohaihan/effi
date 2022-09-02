@@ -87,41 +87,54 @@ class DatabasesView(APIView):
             return Response(status=400, data={"error": base_data["error"]})
         # 查看sql检查状态
         check_status = CheckContent.objects.filter(sql_content=sql, status=1).values()
+        # 存储基本信息，用来存操作日志
+        operate_log = {}
         if not check_status:
             # 检查sql是否验证通过
             result = check(request.data)
+            # 存在异常sql时，存入操作日志
+            operate_log["db_env"] = base_data["environment"]
+            operate_log["db_name"] = db_names[0]
+            operate_log["performer"] = request.user.get_username()
+            operate_log["sql"] = sql
+            operate_log["status"] = 0
+            # 存在error代表check出现异常
             if "error" in result:
+                operate_log["error_message"] = result["error"]
                 return Response(status=400, data={"error": result["error"]})
             # result["errorCount"] > 0代表存在异常sql
             if result["errorCount"] > 0:
+                operate_log["error_message"] = "sql检查不通过！"
+                operateLogs(operate_log)
                 return Response(status=400, data={"error": result})
 
         # 循环调用goInception中执行方法，操作多个数据库
         for db_name in db_names:
+            operate_log.pop("status", None)
             result = GoInceptionEngine.execute(db, db_name, sql)
-            result["db_env"] = base_data["environment"]
-            result["db_name"] = db_name
-            result["performer"] = request.user.get_username()
-            result["sql"] = sql
+            operate_log["db_env"] = base_data["environment"]
+            operate_log["db_name"] = db_name
+            operate_log["performer"] = request.user.get_username()
+            operate_log["sql"] = sql
             if "error" in result:
                 return Response(status=400, data={"error": result["error"]})
             # 将执行结果放入数据库
             if result["errorCount"] > 0:
-                result["status"] = 0
+                operate_log["status"] = 0
                 for data in result["rows"]:
                     # goInception中0代表成功，1代表warn，2代表error
                     if data["error_level"] == 2:
-                        result["error_message"] = data["error_message"]
+                        operate_log["error_message"] = data["error_message"]
                         break
                 # 存入日志
-                operateLogs(result)
+                operateLogs(operate_log)
                 # 将goInception结果保存
                 CheckContent.objects.create(sql_content=sql, status=0)
-                return Response(status=400, data={"error": "执行失败，异常原因：%s" % result["error_message"]})
+                return Response(status=400, data={"error": "执行失败，异常原因：%s" % operate_log["error_message"]})
             else:
                 CheckContent.objects.create(sql_content=sql, status=1)
             # 存入操作日志
-            operateLogs(result)
+            operateLogs(operate_log)
         return Response("恭喜你，全部sql执行成功！")
 
 
@@ -216,8 +229,10 @@ class AuditsViewSet(AdminViewSet):
         request.data["user"] = user
         # 检查sql是否验证通过
         result = check(request.data)
+        # 代表执行异常
         if "error" in result:
             return Response(status=400, data={"error": result["error"]})
+        # result["errorCount"] > 0代表存在检查异常语句
         if result["errorCount"] > 0:
             return Response(status=400, data={"error": result})
         request.data["execute_db_name"] = json.dumps(request.data["execute_db_name"])

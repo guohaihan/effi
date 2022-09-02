@@ -28,6 +28,7 @@ class OperationLogMiddleware:
         self.get_response = get_response
         self.operation_logger = logging.getLogger('operation')  # 记录非GET操作日志
         self.query_logger = logging.getLogger('query')  # 记录GET查询操作日志
+        self.error_logger = logging.getLogger('error')  # 记录异常日志
 
     def __call__(self, request):
         try:
@@ -54,9 +55,8 @@ class OperationLogMiddleware:
             response_body = dict()
         log_info = f'[{request.user} [Request: {request.method} {request.path} {request_body}] ' \
                    f'[Response: {response.status_code} {response.reason_phrase} {response_body}]]'
-        if response.status_code >= 500:
-            logger.error(log_info)
-        elif response.status_code >= 400:
+        if response.status_code >= 400:
+            logger = self.error_logger
             logger.error(log_info)
         else:
             logger.info(log_info)
