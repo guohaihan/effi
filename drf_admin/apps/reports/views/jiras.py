@@ -7,6 +7,7 @@
 """
 from jira import JIRA
 from django.http import JsonResponse, HttpResponse
+from rest_framework import status
 from rest_framework.decorators import api_view
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
@@ -26,22 +27,22 @@ def counts(request):
     return:统计数
     """
     if request.method != "GET":
-        return HttpResponse("只接受GET请求！", status=405)
+        return HttpResponse("只接受GET请求！", status=status.HTTP_405_METHOD_NOT_ALLOWED)
     sprint = request.GET.get("sprint")
     if not sprint:
-        return HttpResponse("sprint必填，格式?sprint=", status=400)
+        return HttpResponse("sprint必填，格式?sprint=", status=status.HTTP_400_BAD_REQUEST)
     server = "http://192.168.1.203:8080"
     try:
         jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
     except Exception as e:
-        return HttpResponse("失败原因：%s" % e, status=400)
+        return HttpResponse("失败原因：%s" % e, status=status.HTTP_400_BAD_REQUEST)
     jql = """project = GZ AND status in (Open, "In Progress", Reopened, Resolved, 已关闭) AND fixVersion = "%s" ORDER BY assignee ASC, key DESC, summary ASC, created DESC""" % sprint
     story_jql = """project = GZ AND issuetype = 故事 AND fixVersion = "%s" ORDER BY summary DESC, key DESC, assignee ASC, created DESC""" % sprint
     try:
         issue_list = jira_client.search_issues(jql, maxResults=False)
         story_issue_list = jira_client.search_issues(story_jql, maxResults=False)
     except Exception as e:
-        return HttpResponse(e.text, status=400)
+        return HttpResponse(e.text, status=status.HTTP_400_BAD_REQUEST)
     assignee_list = []
     issuetype_list = []
     story_list = []

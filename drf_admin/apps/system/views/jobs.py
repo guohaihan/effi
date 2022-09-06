@@ -122,7 +122,7 @@ class JobUpdateDestroyAPIView(mixins.UpdateModelMixin, DestroyAPIView):
     def patch(self, request, *args, **kwargs):
         job = scheduler.get_job(self.get_job_id())
         if not job:
-            return Response(data={'detail': '调度任务不存在'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={'error': '调度任务不存在'}, status=status.HTTP_400_BAD_REQUEST)
         serializer = self.get_serializer(job, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
@@ -132,7 +132,7 @@ class JobUpdateDestroyAPIView(mixins.UpdateModelMixin, DestroyAPIView):
         try:
             scheduler.remove_job(self.get_job_id())
         except JobLookupError:
-            return Response(data={'detail': '调度任务不存在'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={'error': '调度任务不存在'}, status=status.HTTP_400_BAD_REQUEST)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 

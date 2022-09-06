@@ -52,7 +52,7 @@ class SqlscriptOperateGenericView(RetrieveAPIView):
             with open(instance.content.path, 'r', encoding="utf-8") as f:
                 lines = f.read()
         except Exception as e:
-            return Response({'error': '%s' % e}, status=444)
+            return Response({'error': '%s' % e}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             # 将文件数据写入到文件中

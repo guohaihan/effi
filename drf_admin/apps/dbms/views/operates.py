@@ -34,6 +34,7 @@ def check(data):
     sql = data["operate_sql"]
     # 调用goInception中检查方法
     result = GoInceptionEngine.check(db, db_name, sql)
+    result["dbName"] = db_name
     if "error" in result:
         return result
     # 将检查结果放入数据库
@@ -61,11 +62,11 @@ class DatabasesView(APIView):
         # 获取某个环境的数据
         all_db_list = obj.get_all_db()
         if isinstance(all_db_list, dict):
-            return Response(status=400, data={"error": all_db_list["error"]})
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": all_db_list["error"]})
         if request.query_params:
             # tenant用来过滤租户库
             if "tenant" not in request.query_params:
-                return Response(status=400, data={"error": "请求参数为tenant"})
+                return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "请求参数为tenant"})
             for all_db_i in all_db_list[:]:
                 if not all_db_i["Database"].startswith("guozhi_tenant_") or all_db_i["Database"] == "guozhi_tenant_1":
                     all_db_list.remove(all_db_i)
@@ -74,9 +75,9 @@ class DatabasesView(APIView):
     def post(self, request):
         """执行sql，并记录到日志"""
         if ["db", "execute_db_name", "operate_sql"].sort() != list(request.data.keys()).sort():
-            return Response(status=400, data={"error": "请求参数缺失！"})
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "请求参数缺失！"})
         if not request.data["db"] or not request.data["execute_db_name"] or not request.data["operate_sql"]:
-            return Response(status=400, data={"error": "参数不能为空！"})
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "参数不能为空！"})
         db = request.data["db"]
         db_names = request.data["execute_db_name"]
         sql = request.data["operate_sql"]
@@ -84,7 +85,7 @@ class DatabasesView(APIView):
         # 获取对应数据库连接信息
         base_data = obj.basic_info()
         if "error" in base_data:
-            return Response(status=400, data={"error": base_data["error"]})
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": base_data["error"]})
         # 查看sql检查状态
         check_status = CheckContent.objects.filter(sql_content=sql, status=1).values()
         # 存储基本信息，用来存操作日志
@@ -101,13 +102,15 @@ class DatabasesView(APIView):
             # 存在error代表check出现异常
             if "error" in result:
                 operate_log["error_message"] = result["error"]
-                return Response(status=400, data={"error": result["error"]})
+                return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": result["error"]})
             # result["errorCount"] > 0代表存在异常sql
             if result["errorCount"] > 0:
                 operate_log["error_message"] = "sql检查不通过！"
                 operateLogs(operate_log)
-                return Response(status=400, data={"error": result})
+                return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql检查不通过！", "errorData": result})
 
+        # 存放返回数据
+        data = {"success": [], "errors": None}
         # 循环调用goInception中执行方法，操作多个数据库
         for db_name in db_names:
             operate_log.pop("status", None)
@@ -117,25 +120,27 @@ class DatabasesView(APIView):
             operate_log["performer"] = request.user.get_username()
             operate_log["sql"] = sql
             if "error" in result:
-                return Response(status=400, data={"error": result["error"]})
+                return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": result["error"]})
+            result["dbName"] = db_name
             # 将执行结果放入数据库
             if result["errorCount"] > 0:
+                data["errors"] = result
                 operate_log["status"] = 0
-                for data in result["rows"]:
+                for row in result["rows"]:
                     # goInception中0代表成功，1代表warn，2代表error
-                    if data["error_level"] == 2:
-                        operate_log["error_message"] = data["error_message"]
+                    if row["error_level"] == 2:
+                        operate_log["error_message"] = row["error_message"]
                         break
                 # 存入日志
                 operateLogs(operate_log)
-                # 将goInception结果保存
-                CheckContent.objects.create(sql_content=sql, status=0)
-                return Response(status=400, data={"error": "执行失败，异常原因：%s" % operate_log["error_message"]})
-            else:
-                CheckContent.objects.create(sql_content=sql, status=1)
+                if operate_log["error_message"] == "Not supported statement type.":
+                    return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "不支持select语句！"})
+                else:
+                    return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql执行不通过！", "errorData": data})
+            data["success"].append(result)
             # 存入操作日志
             operateLogs(operate_log)
-        return Response("恭喜你，全部sql执行成功！")
+        return Response(data=data)
 
 
 class MyFilterSet(FilterSet):
@@ -231,10 +236,10 @@ class AuditsViewSet(AdminViewSet):
         result = check(request.data)
         # 代表执行异常
         if "error" in result:
-            return Response(status=400, data={"error": result["error"]})
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": result["error"]})
         # result["errorCount"] > 0代表存在检查异常语句
         if result["errorCount"] > 0:
-            return Response(status=400, data={"error": result})
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql检查不通过！", "errorData": result})
         request.data["execute_db_name"] = json.dumps(request.data["execute_db_name"])
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

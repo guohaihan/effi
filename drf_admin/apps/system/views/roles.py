@@ -61,17 +61,17 @@ class RolesViewSet(AdminViewSet):
 
     def update(self, request, *args, **kwargs):
         if self.get_object().name == 'admin':
-            return Response(data={'detail': 'admin角色不可修改'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={'error': 'admin角色不可修改'}, status=status.HTTP_400_BAD_REQUEST)
         return super().update(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
         if self.get_object().name == 'admin':
-            return Response(data={'detail': 'admin角色不可删除'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={'error': 'admin角色不可删除'}, status=status.HTTP_400_BAD_REQUEST)
         return super().destroy(request, *args, **kwargs)
 
     def partial_update(self, request, *args, **kwargs):
         if self.get_object().name == 'admin':
-            return Response(data={'detail': 'admin角色, 默认拥有所有权限'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(data={'error': 'admin角色, 默认拥有所有权限'}, status=status.HTTP_400_BAD_REQUEST)
         return super().partial_update(request, *args, **kwargs)
 
     def multiple_delete(self, request, *args, **kwargs):
@@ -80,7 +80,7 @@ class RolesViewSet(AdminViewSet):
             admin = Roles.objects.get(name='admin')
             if isinstance(delete_ids, list):
                 if admin.id in delete_ids:
-                    return Response(data={'detail': 'admin角色不可删除'}, status=status.HTTP_400_BAD_REQUEST)
+                    return Response(data={'error': 'admin角色不可删除'}, status=status.HTTP_400_BAD_REQUEST)
         except Roles.DoesNotExist:
             pass
         return super().multiple_delete(request, *args, **kwargs)

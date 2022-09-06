@@ -82,10 +82,12 @@ class ResponseMiddleware(MiddlewareMixin):
             if response.status_code >= 500:
                 msg = '服务端异常'
                 error = response.data.get("error")
+                data = response.data.get("errorData")
                 code = response.status_code
             elif response.status_code >= 400:
                 msg = '客户端异常'
                 error = response.data.get("error")
+                data = response.data.get("errorData")
                 code = response.status_code
             elif str(response.status_code).startswith('2'):
                 msg = '成功'
@@ -103,7 +105,7 @@ class ResponseMiddleware(MiddlewareMixin):
             if str(code).startswith("2"):
                 response.data = {'msg': msg, 'code': code, "data": data}
             else:
-                response.data = {'msg': msg, 'errors': error, 'code': code}
+                response.data = {'msg': msg, 'errors': error, "data": data, 'code': code}
             response.content = response.rendered_content
         return response
 

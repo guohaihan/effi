@@ -150,7 +150,7 @@ class ItemReportsViewSet(AdminViewSet):
     def create(self, request, *args, **kwargs):
         score_data = score(request.data)
         if isinstance(score_data, str):
-            return Response(data={"error": score_data}, status=400)
+            return Response(data={"error": score_data}, status=status.HTTP_400_BAD_REQUEST)
         request.data["scores"] = score_data
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -164,7 +164,7 @@ class ItemReportsViewSet(AdminViewSet):
         instance = self.get_object()
         score_data = score(request.data)
         if isinstance(score_data, str):
-            return Response(data={"error": score_data}, status=400)
+            return Response(data={"error": score_data}, status=status.HTTP_400_BAD_REQUEST)
         request.data["scores"] = score_data
         serializer = self.get_serializer(instance, data=request.data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -187,7 +187,7 @@ class ItemReportsViewSet(AdminViewSet):
             return Response(data=queryset)
 
         elif "type" not in request.GET:
-            return Response(data={"error": "缺少类型参数，请求参数格式：type: year/quarter/month/sprint或startDate=&endDate="}, status=400)
+            return Response(data={"error": "缺少类型参数，请求参数格式：type: year/quarter/month/sprint或startDate=&endDate="}, status=status.HTTP_400_BAD_REQUEST)
         if request.GET["type"] in ["year", "month", "quarter"]:
             if request.GET["type"] == "year":
                 type = TruncYear("end_time")
@@ -211,7 +211,7 @@ class ItemReportsViewSet(AdminViewSet):
             return Response(data=queryset)
 
         else:
-            return Response(data={"error": "只支持年、季度、月、迭代"}, status=400)
+            return Response(data={"error": "只支持年、季度、月、迭代"}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=["get"])
     def get_jira_version(self, request):
@@ -230,7 +230,7 @@ class ItemReportsViewSet(AdminViewSet):
             try:
                 jira_client = JIRA(server=server, basic_auth=("guohaihan", "guo126"))
             except Exception as e:
-                return HttpResponse("失败原因：%s" % e, status=400)
+                return HttpResponse("失败原因：%s" % e, status=status.HTTP_400_BAD_REQUEST)
 
             jira_version = jira_client.project_versions("GZ")
             jira_version_list = []
@@ -264,7 +264,7 @@ class ItemReportsViewSet(AdminViewSet):
             return Response(data=queryset)
 
         elif "type" not in request.GET:
-            return Response(data={"error": "缺少类型参数，请求参数格式：type: year/quarter/month或startDate=&endDate="}, status=400)
+            return Response(data={"error": "缺少类型参数，请求参数格式：type: year/quarter/month或startDate=&endDate="}, status=status.HTTP_400_BAD_REQUEST)
 
         if request.GET["type"] in ["year", "month", "quarter"]:
             if request.GET["type"] == "year":

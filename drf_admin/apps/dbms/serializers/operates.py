@@ -20,9 +20,9 @@ class SqlscriptsSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         if not all([attrs["name"], attrs["content"]]):
-            raise ValidationError({"detail": "存在为空的字段"})
+            raise ValidationError({"error": "存在为空的字段"})
         if attrs["type"] not in [1, 2]:
-            raise ValidationError({"detail": "类型错误"})
+            raise ValidationError({"error": "类型错误"})
         return attrs
 
     def create(self, validated_data):
