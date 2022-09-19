@@ -128,6 +128,7 @@ class DatabasesView(APIView):
                 "title": "SQL检查",
                 "text": "sql检查失败！"
             })
+            data["errors"] = result
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql检查不通过！", "errorData": data})
 
         # 循环调用goInception中执行方法，操作多个数据库
@@ -168,10 +169,7 @@ class DatabasesView(APIView):
                     "title": "SQL执行",
                     "text": f"sql执行失败：成功：{i}个；失败数据库：{db_name}！"
                 })
-                if operate_log["error_message"] == "Not supported statement type.":
-                    return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "不支持select语句！"})
-                else:
-                    return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql执行不通过！", "errorData": data})
+                return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql执行不通过！", "errorData": data})
             data["success"].append(result)
             i += 1
             # 存入操作日志
