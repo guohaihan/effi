@@ -21,6 +21,7 @@ def operateLogs(result):
         "operate_sql": result["sql"],
         "performer": result["performer"],
         "status": status,
-        "error_info": error_info
+        "error_info": error_info,
+        "sprint": result["sprint"]
     }
     OperateLogs.objects.create(**data)

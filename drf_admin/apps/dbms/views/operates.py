@@ -22,6 +22,10 @@ from django.http import HttpResponse
 from openpyxl import Workbook
 from dbms.engines.mysql import MysqlEngine
 import os, json, re
+import drf_admin.common.vars as var
+
+
+access_token = var.sql_token
 
 
 def check(data, conn):
@@ -40,6 +44,23 @@ def check(data, conn):
     # 将检查结果放入数据库
     if result["errorCount"] > 0:
         CheckContent.objects.create(sql_content=sql, status=0)
+        # 存在异常sql时，存入操作日志
+        operate_log = {}
+        operate_log["db_env"] = data["environment"]
+        operate_log["db_name"] = db_name
+        operate_log["performer"] = data["performer"]
+        operate_log["sql"] = sql
+        operate_log["status"] = 0
+        operate_log["sprint"] = data["sprint"]
+        # 存在error代表check出现异常
+        if "error" in result:
+            operate_log["error_message"] = result["error"]
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": result["error"]})
+        # result["errorCount"] > 0代表存在异常sql
+        if result["errorCount"] > 0:
+            data["errors"] = result
+            operate_log["error_message"] = "sql检查不通过！"
+            operateLogs(operate_log)
     else:
         CheckContent.objects.create(sql_content=sql, status=1)
     return result
@@ -78,16 +99,17 @@ class DatabasesView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "请求参数缺失！"})
         if not request.data["db"] or not request.data["execute_db_name"] or not request.data["operate_sql"]:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "参数不能为空！"})
-        db = request.data["db"]
         db_names = request.data["execute_db_name"]
         sql = request.data["operate_sql"]
+        request.data["sprint"] = request.data["sprint"] if "sprint" in request.data else None
+        db = request.data["db"]
         obj = MysqlEngine(db)
         # 获取对应数据库连接信息
         base_data = obj.basic_info()
         if "error" in base_data:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": base_data["error"]})
-        # 查看sql检查状态
-        check_status = CheckContent.objects.filter(sql_content=sql, status=1).values()
+        request.data["performer"] = request.user.get_username()
+        request.data["environment"] = base_data["environment"]
         # 存储基本信息，用来存操作日志
         operate_log = {}
         # 存放返回数据
@@ -96,27 +118,20 @@ class DatabasesView(APIView):
         conn = GoInceptionEngine().get_connection()
         if isinstance(conn, dict):
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "建立连接失败，失败原因：%s" % conn["error"]})
-        if not check_status:
-            # 检查sql是否验证通过
-            result = check(request.data, conn)
-            # 存在异常sql时，存入操作日志
-            operate_log["db_env"] = base_data["environment"]
-            operate_log["db_name"] = db_names[0]
-            operate_log["performer"] = request.user.get_username()
-            operate_log["sql"] = sql
-            operate_log["status"] = 0
-            # 存在error代表check出现异常
-            if "error" in result:
-                operate_log["error_message"] = result["error"]
-                return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": result["error"]})
-            # result["errorCount"] > 0代表存在异常sql
-            if result["errorCount"] > 0:
-                data["errors"] = result
-                operate_log["error_message"] = "sql检查不通过！"
-                operateLogs(operate_log)
-                return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql检查不通过！", "errorData": data})
+        # 检查sql是否验证通过
+        result = check(request.data, conn)
+        if result["errorCount"] > 0:
+            # 发送钉钉消息
+            send_dingding_msg.delay(access_token, "link", {
+                "messageUrl": f"http://{request.META['HTTP_HOST']}/api/dbms/audits/?page=1&size=10&status=0",
+                "picUrl": "https://img0.baidu.com/it/u=3821549314,1624213915&fm=253&fmt=auto&app=138&f=JPEG?w=773&h=500",
+                "title": "SQL检查",
+                "text": "sql检查失败！"
+            })
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql检查不通过！", "errorData": data})
 
         # 循环调用goInception中执行方法，操作多个数据库
+        i = 0
         for db_name in db_names:
             operate_log.pop("status", None)
             result = GoInceptionEngine.execute(db, db_name, sql, conn)
@@ -124,7 +139,15 @@ class DatabasesView(APIView):
             operate_log["db_name"] = db_name
             operate_log["performer"] = request.user.get_username()
             operate_log["sql"] = sql
+            operate_log["sprint"] = request.data["sprint"]
             if "error" in result:
+                # 发送钉钉消息
+                send_dingding_msg.delay(access_token, "link", {
+                    "messageUrl": f"http://{request.META['HTTP_HOST']}/api/dbms/audits/?page=1&size=10&status=0",
+                    "picUrl": "https://img0.baidu.com/it/u=3821549314,1624213915&fm=253&fmt=auto&app=138&f=JPEG?w=773&h=500",
+                    "title": "SQL执行",
+                    "text": f"sql执行失败：成功：{i}个；失败数据库：{db_name}！"
+                })
                 return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": result["error"]})
             result["dbName"] = db_name
             # 将执行结果放入数据库
@@ -138,14 +161,23 @@ class DatabasesView(APIView):
                         break
                 # 存入日志
                 operateLogs(operate_log)
+                # 发送钉钉消息
+                send_dingding_msg.delay(access_token, "link", {
+                    "messageUrl": f"http://{request.META['HTTP_HOST']}/api/dbms/audits/?page=1&size=10&status=0",
+                    "picUrl": "https://img0.baidu.com/it/u=3821549314,1624213915&fm=253&fmt=auto&app=138&f=JPEG?w=773&h=500",
+                    "title": "SQL执行",
+                    "text": f"sql执行失败：成功：{i}个；失败数据库：{db_name}！"
+                })
                 if operate_log["error_message"] == "Not supported statement type.":
                     return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "不支持select语句！"})
                 else:
                     return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql执行不通过！", "errorData": data})
             data["success"].append(result)
+            i += 1
             # 存入操作日志
             operateLogs(operate_log)
         conn.close()
+        send_dingding_msg.delay(access_token, "text", "全部SQL执行成功！")
         return Response(data=data)
 
 
@@ -237,11 +269,16 @@ class AuditsViewSet(AdminViewSet):
 
     def create(self, request, *args, **kwargs):
         user = request.user.get_username()
-        request.data["user"] = user
-        # 检查sql是否验证通过
+        request.data["performer"] = user
+        db = request.data["db"]
+        obj = MysqlEngine(db)
+        base_data = obj.basic_info()
+        request.data["environment"] = base_data["environment"]
+        # 获取对应数据库连接信息
         conn = GoInceptionEngine().get_connection()
         if isinstance(conn, dict):
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "建立连接失败，失败原因：%s" % conn["error"]})
+        # 检查sql是否验证通过
         result = check(request.data, conn)
         conn.close()
         # 代表执行异常
@@ -255,7 +292,6 @@ class AuditsViewSet(AdminViewSet):
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
         headers = self.get_success_headers(serializer.data)
-        access_token = "241dc3a7aaf7c97ca10aa122f6e5568b1b0c6c3a4dbcc6454b08a64f0ca9d0c7"
         send_dingding_msg.delay(access_token, "link", {
             "messageUrl": f"http://{request.META['HTTP_HOST']}/api/dbms/audits/?page=1&size=10&status=0",
             "picUrl": "https://img0.baidu.com/it/u=3821549314,1624213915&fm=253&fmt=auto&app=138&f=JPEG?w=773&h=500",
@@ -280,10 +316,8 @@ class AuditsViewSet(AdminViewSet):
         serializer.save()
         # 根据审核状态发送钉钉消息
         if request.data["status"] == "1":
-            access_token = "241dc3a7aaf7c97ca10aa122f6e5568b1b0c6c3a4dbcc6454b08a64f0ca9d0c7"
             send_dingding_msg.delay(access_token, "text", "sql已审核通过，请观察操作日志，是否执行成功！")
         elif request.data["status"] == "2":
-            access_token = "241dc3a7aaf7c97ca10aa122f6e5568b1b0c6c3a4dbcc6454b08a64f0ca9d0c7"
             send_dingding_msg.delay(access_token, "text", f"sql被驳回，驳回原因：{request.data['reason']}！")
         return Response(serializer.data)
 
