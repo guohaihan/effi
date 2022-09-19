@@ -24,7 +24,7 @@ from dbms.engines.mysql import MysqlEngine
 import os, json, re
 
 
-def check(data):
+def check(data, conn):
     """
     检查提交sql；
     """
@@ -33,7 +33,7 @@ def check(data):
     db_name = data["execute_db_name"][0]
     sql = data["operate_sql"]
     # 调用goInception中检查方法
-    result = GoInceptionEngine.check(db, db_name, sql)
+    result = GoInceptionEngine.check(db, db_name, sql, conn)
     result["dbName"] = db_name
     if "error" in result:
         return result
@@ -90,9 +90,15 @@ class DatabasesView(APIView):
         check_status = CheckContent.objects.filter(sql_content=sql, status=1).values()
         # 存储基本信息，用来存操作日志
         operate_log = {}
+        # 存放返回数据
+        data = {"success": [], "errors": None}
+        # 建立连接
+        conn = GoInceptionEngine().get_connection()
+        if isinstance(conn, dict):
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "建立连接失败，失败原因：%s" % conn["error"]})
         if not check_status:
             # 检查sql是否验证通过
-            result = check(request.data)
+            result = check(request.data, conn)
             # 存在异常sql时，存入操作日志
             operate_log["db_env"] = base_data["environment"]
             operate_log["db_name"] = db_names[0]
@@ -105,16 +111,15 @@ class DatabasesView(APIView):
                 return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": result["error"]})
             # result["errorCount"] > 0代表存在异常sql
             if result["errorCount"] > 0:
+                data["errors"] = result
                 operate_log["error_message"] = "sql检查不通过！"
                 operateLogs(operate_log)
-                return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql检查不通过！", "errorData": result})
+                return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "sql检查不通过！", "errorData": data})
 
-        # 存放返回数据
-        data = {"success": [], "errors": None}
         # 循环调用goInception中执行方法，操作多个数据库
         for db_name in db_names:
             operate_log.pop("status", None)
-            result = GoInceptionEngine.execute(db, db_name, sql)
+            result = GoInceptionEngine.execute(db, db_name, sql, conn)
             operate_log["db_env"] = base_data["environment"]
             operate_log["db_name"] = db_name
             operate_log["performer"] = request.user.get_username()
@@ -140,6 +145,7 @@ class DatabasesView(APIView):
             data["success"].append(result)
             # 存入操作日志
             operateLogs(operate_log)
+        conn.close()
         return Response(data=data)
 
 
@@ -233,7 +239,11 @@ class AuditsViewSet(AdminViewSet):
         user = request.user.get_username()
         request.data["user"] = user
         # 检查sql是否验证通过
-        result = check(request.data)
+        conn = GoInceptionEngine().get_connection()
+        if isinstance(conn, dict):
+            return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": "建立连接失败，失败原因：%s" % conn["error"]})
+        result = check(request.data, conn)
+        conn.close()
         # 代表执行异常
         if "error" in result:
             return Response(status=status.HTTP_400_BAD_REQUEST, data={"error": result["error"]})

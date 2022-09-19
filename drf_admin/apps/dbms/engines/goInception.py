@@ -35,7 +35,7 @@ class GoInceptionEngine(object):
         return host, user, password, port
 
     @staticmethod
-    def execute(db, db_name, sql):
+    def execute(db, db_name, sql, conn):
         """sql执行"""
         basic_info = GoInceptionEngine().basic_info(db)
         if isinstance(basic_info, dict):
@@ -46,11 +46,11 @@ class GoInceptionEngine(object):
                                     use `{db_name}`;
                                     {sql.rstrip(';')};
                                     inception_magic_commit;"""
-        result = GoInceptionEngine().query(sql_execute)
+        result = GoInceptionEngine().query(sql_execute, conn)
         return result
 
     @staticmethod
-    def check(db, db_name, sql):
+    def check(db, db_name, sql, conn):
         """sql检查"""
         basic_info = GoInceptionEngine().basic_info(db)
         if isinstance(basic_info, dict):
@@ -61,15 +61,12 @@ class GoInceptionEngine(object):
                                     use `{db_name}`;
                                     {sql.rstrip(';')};
                                     inception_magic_commit;"""
-        result = GoInceptionEngine().query(sql_execute)
+        result = GoInceptionEngine().query(sql_execute, conn)
         return result
 
     @staticmethod
-    def query(sql):
+    def query(sql, conn):
         """负责执行goInception语句"""
-        conn = GoInceptionEngine().get_connection()
-        if isinstance(conn, dict):
-            return conn
         cur = conn.cursor()
         try:
             cur.execute(sql)
@@ -77,7 +74,6 @@ class GoInceptionEngine(object):
             return {"error": "goInception中sql执行失败！失败原因：%s" % e}
         data = {"title": [i[0] for i in cur.description], "infos": cur.fetchall()}
         cur.close()
-        conn.close()
         return GoInceptionEngine().to_dict(data)
 
     @staticmethod
