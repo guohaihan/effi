@@ -267,6 +267,7 @@ class AuditsViewSet(AdminViewSet):
 
     def create(self, request, *args, **kwargs):
         user = request.user.get_username()
+        request.data["user"] = user
         request.data["performer"] = user
         db = request.data["db"]
         obj = MysqlEngine(db)
