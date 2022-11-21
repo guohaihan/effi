@@ -133,7 +133,7 @@ WSGI_APPLICATION = 'drf_admin.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': "mydrf",
+        'NAME': "mysite",
         'USER': "root",
         'PASSWORD': "123456",
         'HOST': '127.0.0.1',
@@ -235,6 +235,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # 指定自定义的用户模型
 AUTH_USER_MODEL = 'oauth.Users'
+
+# 自动创建主键
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 # DRF配置
 REST_FRAMEWORK = {

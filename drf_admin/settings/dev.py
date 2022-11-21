@@ -127,7 +127,7 @@ WSGI_APPLICATION = 'drf_admin.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': "mydrf",
+        'NAME': "mysite",
         'USER': "root",
         'PASSWORD': "123456",
         'HOST': '127.0.0.1',
@@ -230,6 +230,9 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # 指定自定义的用户模型
 AUTH_USER_MODEL = 'oauth.Users'
 
+# 自动创建主键
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
+
 # DRF配置
 REST_FRAMEWORK = {
     # 异常处理
@@ -273,6 +276,7 @@ PROJECT_START_TIME = psutil.Process().create_time()
 # Swagger配置 https://github.com/axnsan12/drf-yasg/issues/58
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,
+    'DEFAULT_GENERATOR_CLASS': 'rest_framework.schemas.generators.BaseSchemaGenerator',
     'SECURITY_DEFINITIONS': {
         'api_key': {
             'type': 'apiKey',
